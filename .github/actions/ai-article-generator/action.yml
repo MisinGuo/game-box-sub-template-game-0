@@ -1,0 +1,254 @@
+# AI 文章生成器 - GitHub Action
+# 公共仓库，用户通过管理后台连接并自动触发
+# 支持图片搜索引擎和自定义图片池
+
+name: 'AI 文章生成器'
+description: '使用 AI 自动生成游戏相关文章（支持图片自动插入）'
+author: 'Game Box Team'
+
+branding:
+  icon: 'edit-3'
+  color: 'blue'
+
+inputs:
+  # AI 相关配置
+  ai-provider:
+    description: 'AI 提供商: openai, claude, qwen, deepseek'
+    required: true
+    default: 'deepseek'
+  
+  api-key:
+    description: 'AI 平台 API Key（建议使用 secrets）'
+    required: true
+  
+  model:
+    description: '指定使用的模型名称'
+    required: false
+    default: ''
+  
+  max-tokens:
+    description: '最大生成 Token 数'
+    required: false
+    default: '4096'
+  
+  temperature:
+    description: '生成温度（0-2）'
+    required: false
+    default: '0.7'
+  
+  # 模板相关配置
+  template:
+    description: '模板名称或 Base64 编码的自定义模板内容'
+    required: true
+    default: 'game-intro'
+  
+  template-url:
+    description: '远程模板 URL（优先级高于 template）'
+    required: false
+    default: ''
+  
+  # 游戏相关配置  
+  game-name:
+    description: '游戏名称'
+    required: true
+  
+  category:
+    description: '游戏分类: xianxia, chuanqi, sanguo 等'
+    required: false
+    default: ''
+  
+  variables:
+    description: '额外变量（JSON 格式）'
+    required: false
+    default: '{}'
+  
+  # 输出配置
+  output-path:
+    description: '输出文件路径（相对于仓库根目录）'
+    required: false
+    default: 'src/docs/pojie'
+  
+  commit-changes:
+    description: '是否自动提交更改'
+    required: false
+    default: 'true'
+  
+  commit-message:
+    description: '提交信息模板'
+    required: false
+    default: 'feat(docs): 自动生成文章 - {game_name}'
+  
+  # 自定义提示词和关键词
+  custom-prompt:
+    description: '自定义提示词（追加到模板）'
+    required: false
+    default: ''
+  
+  custom-keywords:
+    description: 'SEO 关键词（逗号分隔）'
+    required: false
+    default: ''
+  
+  # 批量任务相关
+  task-id:
+    description: '任务 ID（由后端系统生成，用于回调）'
+    required: false
+    default: ''
+  
+  # Webhook 回调
+  webhook-url:
+    description: '生成完成后回调 URL'
+    required: false
+    default: ''
+  
+  webhook-secret:
+    description: 'Webhook 签名密钥'
+    required: false
+    default: ''
+  
+  # ========== 图片相关配置 ==========
+  image-search-enabled:
+    description: '是否启用图片搜索'
+    required: false
+    default: 'true'
+  
+  image-search-engine:
+    description: '图片搜索引擎: bing, google, unsplash, pixabay'
+    required: false
+    default: 'unsplash'
+  
+  image-search-api-key:
+    description: '图片搜索 API Key'
+    required: false
+    default: ''
+  
+  image-pool-url:
+    description: '图片池配置 JSON URL'
+    required: false
+    default: ''
+  
+  image-pool-json:
+    description: '图片池配置 JSON 内容（Base64 编码）'
+    required: false
+    default: ''
+  
+  image-upload-enabled:
+    description: '是否将图片上传到自有存储'
+    required: false
+    default: 'false'
+  
+  storage-type:
+    description: '存储类型: r2, oss, cos, s3'
+    required: false
+    default: 'r2'
+  
+  storage-config:
+    description: '存储配置（JSON，Base64 编码）'
+    required: false
+    default: ''
+  
+  image-fallback-url:
+    description: '图片获取失败时的默认图片 URL'
+    required: false
+    default: ''
+
+outputs:
+  generated-files:
+    description: '生成的文件路径列表（JSON 数组）'
+  
+  success-count:
+    description: '成功生成的文章数量'
+  
+  failed-count:
+    description: '生成失败的数量'
+  
+  total-tokens:
+    description: '本次消耗的总 Token 数'
+  
+  images-processed:
+    description: '处理的图片数量'
+  
+  execution-time:
+    description: '执行耗时（秒）'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 设置 Node.js 环境
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: 安装依赖
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        npm ci --prefer-offline --no-audit
+    
+    - name: 执行文章生成
+      id: generate
+      shell: bash
+      env:
+        # AI 配置
+        AI_PROVIDER: ${{ inputs.ai-provider }}
+        API_KEY: ${{ inputs.api-key }}
+        MODEL: ${{ inputs.model }}
+        MAX_TOKENS: ${{ inputs.max-tokens }}
+        TEMPERATURE: ${{ inputs.temperature }}
+        # 模板配置
+        TEMPLATE: ${{ inputs.template }}
+        TEMPLATE_URL: ${{ inputs.template-url }}
+        # 游戏配置
+        GAME_NAME: ${{ inputs.game-name }}
+        CATEGORY: ${{ inputs.category }}
+        VARIABLES: ${{ inputs.variables }}
+        # 输出配置
+        OUTPUT_PATH: ${{ inputs.output-path }}
+        # 图片配置
+        IMAGE_SEARCH_ENABLED: ${{ inputs.image-search-enabled }}
+        IMAGE_SEARCH_ENGINE: ${{ inputs.image-search-engine }}
+        IMAGE_SEARCH_API_KEY: ${{ inputs.image-search-api-key }}
+        IMAGE_POOL_URL: ${{ inputs.image-pool-url }}
+        IMAGE_POOL_JSON: ${{ inputs.image-pool-json }}
+        IMAGE_UPLOAD_ENABLED: ${{ inputs.image-upload-enabled }}
+        STORAGE_TYPE: ${{ inputs.storage-type }}
+        STORAGE_CONFIG: ${{ inputs.storage-config }}
+        IMAGE_FALLBACK_URL: ${{ inputs.image-fallback-url }}
+        # Webhook
+        WEBHOOK_URL: ${{ inputs.webhook-url }}
+        WEBHOOK_SECRET: ${{ inputs.webhook-secret }}
+        # 环境
+        GITHUB_WORKSPACE: ${{ github.workspace }}
+      run: |
+        node ${{ github.action_path }}/dist/index.js
+    
+    - name: 提交更改
+      if: inputs.commit-changes == 'true'
+      shell: bash
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        if git diff --staged --quiet; then
+          echo "没有需要提交的更改"
+        else
+          COMMIT_MSG="${{ inputs.commit-message }}"
+          COMMIT_MSG="${COMMIT_MSG//\{game_name\}/${{ inputs.game-name }}}"
+          git commit -m "$COMMIT_MSG"
+          git push
+        fi
+    
+    - name: 发送 Webhook 回调
+      if: inputs.webhook-url != ''
+      shell: bash
+      run: |
+        curl -X POST "${{ inputs.webhook-url }}" \
+          -H "Content-Type: application/json" \
+          -H "X-Webhook-Secret: ${{ inputs.webhook-secret }}" \
+          -d '{
+            "status": "completed",
+            "gameName": "${{ inputs.game-name }}",
+            "generatedFiles": ${{ steps.generate.outputs.generated-files || '[]' }},
+            "tokensUsed": ${{ steps.generate.outputs.total-tokens || 0 }},
+            "imagesProcessed": ${{ steps.generate.outputs.images-processed || 0 }}
+          }'

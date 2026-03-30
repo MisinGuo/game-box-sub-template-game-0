@@ -1,0 +1,13 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grad)"/>
+  <circle cx="600" cy="315" r="80" fill="#334155" opacity="0.5"/>
+  <path d="M 600 265 L 600 365 M 550 315 L 650 315" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
+  <text x="600" y="420" font-family="Arial, sans-serif" font-size="32" fill="#94a3b8" text-anchor="middle">GameBox</text>
+  <text x="600" y="460" font-family="Arial, sans-serif" font-size="20" fill="#64748b" text-anchor="middle">精彩内容即将呈现</text>
+</svg>

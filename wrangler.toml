@@ -1,0 +1,50 @@
+#:schema node_modules/wrangler/config-schema.json
+
+# Cloudflare Workers 配置
+name = "game-box-next-web"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Worker 入口文件
+main = ".open-next/worker.js"
+
+# 静态资源配置
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+# 自引用服务（用于 ISR）
+[[services]]
+binding = "WORKER_SELF_REFERENCE"
+service = "game-box-next-web"
+
+# 环境变量 - 标记为 Workers 模式，启用按需生成
+[vars]
+CLOUDFLARE_WORKERS = "true"
+# ⚠️ 重要：配置生产环境的后端API地址
+# 请替换为你实际的后端API地址
+NEXT_PUBLIC_API_URL = "http://local.zeusai.top:8890"
+NEXT_PUBLIC_SITE_ID = "1"
+
+# ----这里可以跨请求，也就是只要缓存后所有的人访问都会提速，但是SITEMAP_GAME_PAGE_CACHE_TTL_MS是用于单主机即在cfworkers上不生效
+# games sitemap 分页缓存 TTL（毫秒） 
+# 0 表示禁用缓存；默认建议 60000
+SITEMAP_GAME_PAGE_CACHE_TTL_MS = "60000"
+
+# ----这里可以跨请求，也就是只要缓存后所有的人访问都会提速
+# SITEMAP_RESPONSE_CACHE_TTL_SECONDS在cfworkers上生效
+
+# sitemap XML 响应的 Workers Edge Cache TTL（秒）
+# 0 表示禁用响应缓存；默认建议 3600
+SITEMAP_RESPONSE_CACHE_TTL_SECONDS = "3600"
+
+
+
+# REVALIDATE_SECRET = "your-random-secret-key"  # 可选，用于ISR重新验证
+
+
+# 这是cfworkers的日志调试功能
+[observability]
+[observability.logs]
+enabled = true
+invocation_logs = true

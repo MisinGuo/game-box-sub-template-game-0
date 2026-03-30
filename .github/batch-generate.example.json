@@ -1,0 +1,91 @@
+{
+  "$schema": "./batch-generate.schema.json",
+  "_comment": "批量 AI 文章生成配置 - 可在系统后台创建定时任务使用",
+  
+  "tasks": [
+    {
+      "gameName": "剑来",
+      "category": "xianxia",
+      "template": "game-intro",
+      "customPrompt": "请重点介绍游戏的仙侠世界观和修炼体系",
+      "keywords": "仙侠,修仙,剑修,玄幻",
+      "imageEnabled": true,
+      "imageEngine": "unsplash",
+      "variables": {
+        "gameType": "仙侠修真",
+        "features": ["无限元宝", "满V特权", "自由交易"]
+      }
+    },
+    {
+      "gameName": "传奇世界",
+      "category": "chuanqi",
+      "template": "game-intro",
+      "customPrompt": "突出游戏的经典传奇玩法和 PK 系统",
+      "keywords": "传奇,PK,攻沙,热血",
+      "variables": {
+        "gameType": "传奇MMORPG",
+        "features": ["装备回收", "攻速刀刀切割", "爆率全开"]
+      }
+    },
+    {
+      "gameName": "三国志战略版",
+      "category": "sanguo",
+      "template": "strategy",
+      "customPrompt": "详细介绍开局阵容搭配和武将选择",
+      "keywords": "三国,策略,武将,阵容",
+      "variables": {
+        "gameType": "三国策略",
+        "features": ["名将养成", "战略对决", "资源无限"]
+      }
+    },
+    {
+      "gameName": "原神",
+      "category": "erciyuan",
+      "template": "game-intro",
+      "customPrompt": "介绍开放世界探索和角色培养",
+      "keywords": "二次元,开放世界,角色,冒险",
+      "aiProvider": "claude",
+      "variables": {
+        "gameType": "开放世界冒险",
+        "features": ["全角色解锁", "无限原石", "满命座"]
+      }
+    },
+    {
+      "gameName": "明日方舟",
+      "category": "celue",
+      "template": "strategy",
+      "customPrompt": "关卡攻略和干员培养建议",
+      "keywords": "塔防,干员,策略,养成",
+      "variables": {
+        "gameType": "策略塔防",
+        "features": ["全干员解锁", "精二满级", "无限理智"]
+      }
+    }
+  ],
+  
+  "options": {
+    "aiProvider": "deepseek",
+    "imageSearchEnabled": true,
+    "imageSearchEngine": "unsplash",
+    "commitChanges": true,
+    "createPR": false,
+    "maxConcurrent": 2,
+    "delayBetweenTasks": 3000
+  },
+  
+  "_usage": {
+    "description": "此配置用于批量生成多篇文章",
+    "systemIntegration": {
+      "step1": "在管理后台 -> AI 生成 -> 批量任务 中创建新任务",
+      "step2": "上传或编辑此 JSON 配置",
+      "step3": "设置执行时间：立即执行 或 Cron 定时表达式",
+      "step4": "系统自动调用 GitHub Action 执行生成任务",
+      "step5": "任务完成后通过 Webhook 回调更新状态"
+    },
+    "cronExamples": {
+      "everyDay2AM": "0 0 2 * * ?",
+      "everyMonday": "0 0 10 ? * MON",
+      "every6Hours": "0 0 */6 * * ?"
+    }
+  }
+}

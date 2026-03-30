@@ -1,0 +1,300 @@
+# AI 文章生成工作流
+# 
+# 此工作流由管理后台系统自动触发，支持：
+# 1. 手动触发（workflow_dispatch）
+# 2. 定时触发（schedule）
+# 3. 后端系统 API 触发
+#
+# 支持的功能：
+# - 单篇文章生成
+# - 批量多篇文章生成（通过 batch_config 参数）
+# - 定时任务调度（系统中创建任务，定期执行）
+#
+# 支持的 AI 平台：OpenAI, Claude, 通义千问, DeepSeek
+# 支持的图片服务：Bing, Google, Unsplash, Pixabay + 自定义图片池
+
+name: AI 文章生成
+
+on:
+  # 手动触发 / 后端 API 触发
+  workflow_dispatch:
+    inputs:
+      # ===== 批量生成模式 =====
+      batch_mode:
+        description: '是否批量生成模式'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      batch_config:
+        description: '批量生成配置 (JSON 格式)'
+        required: false
+        type: string
+      task_id:
+        description: '任务 ID (由后端系统生成，用于回调)'
+        required: false
+        type: string
+      
+      # ===== 单篇生成模式 =====
+      game_name:
+        description: '游戏名称 (单篇模式)'
+        required: false
+        type: string
+      category:
+        description: '游戏分类'
+        required: false
+        type: choice
+        options:
+          - xianxia
+          - chuanqi
+          - sanguo
+          - wuxia
+          - xiyou
+          - mohuan
+          - qban
+          - huihe
+          - kapai
+          - maoxian
+          - fangzhi
+          - gecao
+          - dongman
+          - erciyuan
+          - celue
+      template:
+        description: '文章模板'
+        required: false
+        default: 'game-intro'
+        type: choice
+        options:
+          - game-intro
+          - strategy
+          - review
+      
+      # ===== 通用配置 =====
+      ai_provider:
+        description: 'AI 平台'
+        required: false
+        default: 'deepseek'
+        type: choice
+        options:
+          - openai
+          - claude
+          - qwen
+          - deepseek
+      image_search_enabled:
+        description: '启用图片搜索'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      image_search_engine:
+        description: '图片搜索引擎'
+        required: false
+        default: 'unsplash'
+        type: choice
+        options:
+          - unsplash
+          - pixabay
+          - bing
+      webhook_url:
+        description: '回调 Webhook URL'
+        required: false
+        type: string
+
+  # 定时触发（由后端配置的 Cron 表达式控制）
+  # 注意：定时任务建议配合批量模式使用，在 secrets 中配置 SCHEDULED_BATCH_CONFIG
+  schedule:
+    - cron: '0 18 * * *'  # UTC 时间，对应北京时间凌晨 2 点
+
+# 权限配置
+permissions:
+  contents: write
+
+jobs:
+  # ======================================
+  # 准备阶段：解析配置，生成任务矩阵
+  # ======================================
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      batch_mode: ${{ steps.set-matrix.outputs.batch_mode }}
+      task_id: ${{ inputs.task_id || github.run_id }}
+    steps:
+      - name: 解析生成任务
+        id: set-matrix
+        run: |
+          if [[ "${{ inputs.batch_mode }}" == "true" && -n "${{ inputs.batch_config }}" ]]; then
+            # 批量模式：从 batch_config 解析任务列表
+            echo "batch_mode=true" >> $GITHUB_OUTPUT
+            
+            # 解析 JSON 配置，提取 tasks 数组
+            MATRIX=$(echo '${{ inputs.batch_config }}' | jq -c '{include: .tasks}')
+            echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+            
+            TASK_COUNT=$(echo '${{ inputs.batch_config }}' | jq '.tasks | length')
+            echo "📋 批量模式：准备生成 $TASK_COUNT 篇文章"
+            
+          elif [[ "${{ github.event_name }}" == "schedule" ]]; then
+            # 定时触发：从 secrets 读取配置
+            echo "batch_mode=true" >> $GITHUB_OUTPUT
+            
+            if [[ -n "${{ secrets.SCHEDULED_BATCH_CONFIG }}" ]]; then
+              MATRIX=$(echo '${{ secrets.SCHEDULED_BATCH_CONFIG }}' | jq -c '{include: .tasks}')
+              echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+            else
+              # 默认配置示例
+              echo 'matrix={"include":[]}' >> $GITHUB_OUTPUT
+              echo "⚠️ 未配置 SCHEDULED_BATCH_CONFIG，跳过定时生成"
+            fi
+            
+          else
+            # 单篇模式
+            echo "batch_mode=false" >> $GITHUB_OUTPUT
+            
+            # 构建单任务矩阵
+            MATRIX=$(cat <<EOF
+          {
+            "include": [{
+              "gameName": "${{ inputs.game_name }}",
+              "category": "${{ inputs.category }}",
+              "template": "${{ inputs.template || 'game-intro' }}"
+            }]
+          }
+          EOF
+          )
+            echo "matrix=$(echo $MATRIX | jq -c '.')" >> $GITHUB_OUTPUT
+            echo "📝 单篇模式：生成 ${{ inputs.game_name }} 文章"
+          fi
+
+  # ======================================
+  # 生成阶段：并行/串行生成文章
+  # ======================================
+  generate:
+    needs: prepare
+    if: ${{ needs.prepare.outputs.matrix != '{"include":[]}' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+      max-parallel: 2  # 最多 2 个并行任务，避免 API 限流
+      fail-fast: false  # 一个任务失败不影响其他任务
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 确定 AI 平台配置
+        id: ai-config
+        run: |
+          # 优先使用任务级配置，其次使用全局配置
+          AI_PROVIDER="${{ matrix.aiProvider || inputs.ai_provider || 'deepseek' }}"
+          echo "provider=$AI_PROVIDER" >> $GITHUB_OUTPUT
+          
+          case "$AI_PROVIDER" in
+            openai)
+              echo "key=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_OUTPUT
+              ;;
+            claude)
+              echo "key=${{ secrets.ANTHROPIC_API_KEY }}" >> $GITHUB_OUTPUT
+              ;;
+            qwen)
+              echo "key=${{ secrets.DASHSCOPE_API_KEY }}" >> $GITHUB_OUTPUT
+              ;;
+            deepseek)
+              echo "key=${{ secrets.DEEPSEEK_API_KEY }}" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: 确定图片搜索配置
+        id: image-config
+        run: |
+          IMAGE_ENGINE="${{ matrix.imageEngine || inputs.image_search_engine || 'unsplash' }}"
+          echo "engine=$IMAGE_ENGINE" >> $GITHUB_OUTPUT
+          
+          case "$IMAGE_ENGINE" in
+            unsplash)
+              echo "key=${{ secrets.UNSPLASH_ACCESS_KEY }}" >> $GITHUB_OUTPUT
+              ;;
+            pixabay)
+              echo "key=${{ secrets.PIXABAY_API_KEY }}" >> $GITHUB_OUTPUT
+              ;;
+            bing)
+              echo "key=${{ secrets.BING_SEARCH_API_KEY }}" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: 生成文章 - ${{ matrix.gameName }}
+        id: generate
+        uses: ./.github/actions/ai-article-generator
+        with:
+          ai-provider: ${{ steps.ai-config.outputs.provider }}
+          api-key: ${{ steps.ai-config.outputs.key }}
+          template: ${{ matrix.template || 'game-intro' }}
+          game-name: ${{ matrix.gameName }}
+          category: ${{ matrix.category }}
+          output-path: 'src/docs/pojie'
+          commit-changes: true
+          commit-message: 'feat(docs): AI 生成文章 - ${{ matrix.gameName }}'
+          # 图片配置
+          image-search-enabled: ${{ matrix.imageEnabled || inputs.image_search_enabled || 'true' }}
+          image-search-engine: ${{ steps.image-config.outputs.engine }}
+          image-search-api-key: ${{ steps.image-config.outputs.key }}
+          image-pool-url: ${{ secrets.IMAGE_POOL_URL }}
+          image-upload-enabled: 'false'
+          # 自定义提示词
+          custom-prompt: ${{ matrix.customPrompt || '' }}
+          custom-keywords: ${{ matrix.keywords || '' }}
+          # Webhook 回调（每篇文章完成后回调）
+          webhook-url: ${{ inputs.webhook_url || secrets.BACKEND_WEBHOOK_URL }}
+          webhook-secret: ${{ secrets.WEBHOOK_SECRET }}
+          task-id: ${{ needs.prepare.outputs.task_id }}
+
+      - name: 输出结果
+        run: |
+          echo "✅ 文章生成完成！"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "游戏名称: ${{ matrix.gameName }}"
+          echo "分类: ${{ matrix.category }}"
+          echo "模板: ${{ matrix.template }}"
+          echo "AI 平台: ${{ steps.ai-config.outputs.provider }}"
+          echo "Token 消耗: ${{ steps.generate.outputs.total-tokens }}"
+          echo "处理图片: ${{ steps.generate.outputs.images-processed }} 张"
+          echo "生成文件: ${{ steps.generate.outputs.generated-files }}"
+
+  # ======================================
+  # 汇总阶段：批量任务完成后汇总回调
+  # ======================================
+  summary:
+    needs: [prepare, generate]
+    if: always() && needs.prepare.outputs.batch_mode == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 汇总批量生成结果
+        run: |
+          echo "📊 批量生成任务汇总"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "任务 ID: ${{ needs.prepare.outputs.task_id }}"
+          echo "生成状态: ${{ needs.generate.result }}"
+          echo "完成时间: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+      - name: 发送汇总回调
+        if: ${{ inputs.webhook_url || secrets.BACKEND_WEBHOOK_URL }}
+        run: |
+          WEBHOOK_URL="${{ inputs.webhook_url || secrets.BACKEND_WEBHOOK_URL }}"
+          
+          curl -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-Webhook-Secret: ${{ secrets.WEBHOOK_SECRET }}" \
+            -d '{
+              "event": "batch_complete",
+              "taskId": "${{ needs.prepare.outputs.task_id }}",
+              "runId": "${{ github.run_id }}",
+              "status": "${{ needs.generate.result }}",
+              "completedAt": "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'"
+            }'
+          
+          echo "✅ 已发送批量完成回调"
