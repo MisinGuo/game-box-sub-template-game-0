@@ -194,6 +194,7 @@ export class ApiClient {
         locale: getCurrentLocale(params.locale),
         ...params,
       }),
+      next: { revalidate: 300, tags: ['boxes'] },
     })
   }
 

@@ -59,32 +59,10 @@ interface PageProps {
 
 // 翻译数据已迁移至 src/i18n/page-translations.ts → gamePageTranslations
 
-// 请求期渲染 + 数据缓存，避免穿透到后端
+// 按需渲染 + ISR 缓存，构建时不预生成，首次访问后缓存 5 分钟
 export const dynamic = 'auto'
+export const dynamicParams = true
 export const revalidate = 300
-
-export async function generateStaticParams() {
-  const params: { locale: string; id: string }[] = []
-  try {
-    const response = await ApiClient.getGames(
-      { pageSize: 100, pageNum: 1 },
-      { next: { revalidate: 3600 } }
-    )
-    if (response.code === 200 && response.rows) {
-      for (const game of response.rows) {
-        params.push({ locale: defaultLocale, id: String(game.id) })
-        for (const locale of supportedLocales) {
-          if (locale !== defaultLocale) {
-            params.push({ locale, id: String(game.id) })
-          }
-        }
-      }
-    }
-  } catch {
-    // 构建期 API 不可用时静默跳过
-  }
-  return params
-}
 
 // 获取游戏可用语言版本（cache() 防止重复请求）
 const getAvailableGameLocales = cache(async (id: string): Promise<Locale[]> => {
@@ -190,7 +168,7 @@ async function RelatedGamesSection({
     const relatedResult = await ApiClient.getCategoryGames(categoryId, {
       locale: locale as any,
       pageNum: 1,
-      pageSize: 9999,
+      pageSize: 12,
     })
     
     let relatedGames: Game[] = []

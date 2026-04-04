@@ -12,29 +12,10 @@ import ImageWithFallback from '../../ImageWithFallback'
 import { boxPageTranslations, getT } from '@/i18n/page-translations'
 import { generateBoxJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
 
+// 按需渲染 + ISR 缓存，构建时不预生成，首次访问后缓存 5 分钟
 export const dynamic = 'auto'
+export const dynamicParams = true
 export const revalidate = 300
-
-export async function generateStaticParams() {
-  const params: { locale: string; id: string }[] = []
-  try {
-    const response = await ApiClient.getBoxes({ pageSize: 50 })
-    if (response.code === 200 && response.rows) {
-      for (const box of response.rows) {
-        // 默认语言不需要 locale prefix
-        params.push({ locale: defaultLocale, id: String(box.id) })
-        for (const locale of supportedLocales) {
-          if (locale !== defaultLocale) {
-            params.push({ locale, id: String(box.id) })
-          }
-        }
-      }
-    }
-  } catch {
-    // 构建期 API 不可用时静默跳过
-  }
-  return params
-}
 
 interface BoxDetailPageProps {
   params: Promise<{ locale: string; id: string }>
