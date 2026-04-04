@@ -14,9 +14,9 @@ directory = ".open-next/assets"
 binding = "ASSETS"
 
 # 自引用服务（用于 ISR）
-[[services]]
-binding = "WORKER_SELF_REFERENCE"
-service = "game-box-next-web"
+# [[services]]
+# binding = "WORKER_SELF_REFERENCE"
+# service = "game-box-next-web"
 
 # 环境变量 - 标记为 Workers 模式，启用按需生成
 [vars]
