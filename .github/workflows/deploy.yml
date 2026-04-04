@@ -1,40 +1,36 @@
-name: 部署到 Cloudflare Workers
+# 自动部署工作流 - 由 GameBox 系统生成
+# 每次推送到 main 分支时自动触发部署到 Cloudflare
+name: 自动部署到 Cloudflare
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches:
+      - main  # 监听此分支的推送事件
+  workflow_dispatch:  # 允许在 GitHub Actions 页面手动触发
 
 jobs:
   deploy:
     name: 构建并部署
     runs-on: ubuntu-latest
-
     steps:
-      - name: 检出代码
+      - name: 拉取代码
         uses: actions/checkout@v4
 
-      - name: 安装 pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: 安装 Node.js
+      - name: 安装 Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
 
-      - name: 安装依赖
+      - name: 启用 Corepack（pnpm/yarn 包管理器支持）
+        run: corepack enable
+
+      - name: 安装项目依赖
         run: pnpm install
 
-      - name: 构建 Cloudflare Workers 包
+      - name: 构建项目
         run: pnpm run build:cfworkers
-        env:
-          CLOUDFLARE_WORKERS: 'true'
-          NODE_ENV: production
 
-      - name: 部署到 Cloudflare Workers
+      - name: 部署到 Cloudflare（需要仓库已配置 CF_API_TOKEN / CF_ACCOUNT_ID Secret）
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
