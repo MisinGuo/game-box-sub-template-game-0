@@ -66,7 +66,7 @@ export default function CategoryGuides({
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {guides.map((guide) => (
-          <Link key={guide.id} href={getArticleLink(guide.id)}>
+          <Link key={guide.masterArticleId} href={getArticleLink(guide.masterArticleId)}>
             <Card className="overflow-hidden hover:shadow-md transition-all h-full group">
               {guide.coverImage && (
                 <div className="aspect-video overflow-hidden">

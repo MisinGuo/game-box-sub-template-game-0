@@ -3,6 +3,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ApiClient from '@/lib/api'
 import { ArticleLayout } from '@/components/content/ArticleLayout'
+import { generateArticleJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
 import { getModuleConfig } from '@/config'
 import { isValidLocale, supportedLocales, defaultLocale, type Locale } from '@/config/site/locales'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
@@ -90,6 +91,14 @@ export async function generateMetadata({
   const titleSuffix = locale === 'zh-TW' ? ' | 遊戲橫評' : locale === 'en-US' ? ' | Game Reviews' : ' | 游戏横评'
   const siteNameStr = locale === 'zh-TW' ? '遊戲橫評' : locale === 'en-US' ? 'Game Reviews' : '游戏横评'
 
+  const languages: Record<string, string> = {}
+  if (availableLocales.length > 1) {
+    availableLocales.forEach(l => {
+      languages[l] = l === defaultLocale ? `/content/reviews/${slug}` : `/${l}/content/reviews/${slug}`
+    })
+    languages['x-default'] = `/content/reviews/${slug}`
+  }
+
   return {
     title: `${review.title}${titleSuffix}`,
     description,
@@ -114,7 +123,10 @@ export async function generateMetadata({
       description,
       images: [imageUrl],
     },
-    alternates: { canonical: reviewUrl },
+    alternates: {
+      canonical: reviewUrl,
+      ...(availableLocales.length > 1 && { languages }),
+    },
   }
 }
 
@@ -138,9 +150,37 @@ export default async function ReviewDetailPage({
   }
 
   const categoryHref = locale === defaultLocale ? '/content/reviews' : `/${locale}/content/reviews`
+  const reviewUrl = locale === defaultLocale ? `/content/reviews/${slug}` : `/${locale}/content/reviews/${slug}`
 
   return (
-    <ArticleLayout
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateArticleJsonLd({
+            title: review.title,
+            description: review.description,
+            coverImage: review.coverImage,
+            author: review.author,
+            createTime: review.createTime,
+            updateTime: review.updateTime,
+            url: reviewUrl,
+            tags: review.tags,
+          })),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateBreadcrumbJsonLd([
+            { name: locale === 'zh-TW' ? '首頁' : locale === 'en-US' ? 'Home' : '首页', url: locale === defaultLocale ? '/' : `/${locale}` },
+            { name: locale === 'zh-TW' ? '內容中心' : locale === 'en-US' ? 'Content' : '内容中心', url: locale === defaultLocale ? '/content' : `/${locale}/content` },
+            { name: locale === 'zh-TW' ? '橫評' : locale === 'en-US' ? 'Reviews' : '评测', url: locale === defaultLocale ? '/content/reviews' : `/${locale}/content/reviews` },
+            { name: review.title, url: reviewUrl },
+          ])),
+        }}
+      />
+      <ArticleLayout
       config={moduleConfig}
       frontmatter={{
         title: review.title,
@@ -156,5 +196,6 @@ export default async function ReviewDetailPage({
       availableLocales={availableLocales}
       breadcrumbCategoryHref={categoryHref}
     />
+    </>
   )
 }

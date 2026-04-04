@@ -7,6 +7,7 @@ interface ImageWithFallbackProps {
   alt: string
   className?: string
   fallbackSrc?: string
+  loading?: 'lazy' | 'eager'
 }
 
 // 直接读取 Next.js 内部注入的 basePath（与 <Image>、<Link> 使用同一来源）
@@ -25,7 +26,8 @@ export default function ImageWithFallback({
   src, 
   alt, 
   className,
-  fallbackSrc = `/images/default-cover.svg`
+  fallbackSrc = `/images/default-cover.svg`,
+  loading = 'lazy',
 }: ImageWithFallbackProps) {
   // 验证URL是否有效（应该以 http/https 或 / 开头）
   const isValidUrl = (url: string | null | undefined): boolean => {
@@ -69,6 +71,7 @@ export default function ImageWithFallback({
       src={imgSrc}
       alt={alt}
       className={className}
+      loading={loading}
       onError={handleError}
     />
   )

@@ -10,31 +10,69 @@ import { isValidLocale, supportedLocales, defaultLocale, type Locale } from '@/c
 import ApiClient from '@/lib/api'
 import ImageWithFallback from '../../ImageWithFallback'
 import { boxPageTranslations, getT } from '@/i18n/page-translations'
+import { generateBoxJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
 
 export const dynamic = 'auto'
 export const revalidate = 300
+
+export async function generateStaticParams() {
+  const params: { locale: string; id: string }[] = []
+  try {
+    const response = await ApiClient.getBoxes({ pageSize: 50 })
+    if (response.code === 200 && response.rows) {
+      for (const box of response.rows) {
+        // 默认语言不需要 locale prefix
+        params.push({ locale: defaultLocale, id: String(box.id) })
+        for (const locale of supportedLocales) {
+          if (locale !== defaultLocale) {
+            params.push({ locale, id: String(box.id) })
+          }
+        }
+      }
+    }
+  } catch {
+    // 构建期 API 不可用时静默跳过
+  }
+  return params
+}
 
 interface BoxDetailPageProps {
   params: Promise<{ locale: string; id: string }>
   searchParams?: Promise<{ page?: string }>
 }
 
-export async function generateMetadata({ params }: BoxDetailPageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: BoxDetailPageProps): Promise<Metadata> {
   const { id, locale } = await params
+  const query = searchParams ? await searchParams : undefined
+  const currentPage = Math.max(1, Number(query?.page || 1))
   const t = getT(boxPageTranslations, locale)
+  const localeTyped = locale as Locale
+
+  // Canonical always points to the base box URL (page 1), regardless of pagination
+  const boxUrl = localeTyped === defaultLocale ? `/boxes/${id}` : `/${localeTyped}/boxes/${id}`
+  const languages: Record<string, string> = {}
+  supportedLocales.forEach(l => {
+    languages[l] = l === defaultLocale ? `/boxes/${id}` : `/${l}/boxes/${id}`
+  })
+  languages['x-default'] = `/boxes/${id}`
 
   try {
     const response = await ApiClient.getBoxDetail(Number(id), locale)
     const box = response.data
+    const titleWithPage = currentPage > 1
+      ? `${box.name} - ${locale === 'en-US' ? `Page ${currentPage}` : `第${currentPage}页`}${t.metaTitleSuffix}`
+      : `${box.name}${t.metaTitleSuffix}`
 
     return {
-      title: `${box.name}${t.metaTitleSuffix}`,
+      title: titleWithPage,
       description: box.description || `${t.metaDescPrefix}${box.name}${t.metaDescSuffix}`,
+      alternates: { canonical: boxUrl, languages },
     }
   } catch {
     return {
       title: t.metaFallbackTitle,
       description: t.metaFallbackDesc,
+      alternates: { canonical: boxUrl, languages },
     }
   }
 }
@@ -188,6 +226,30 @@ async function BoxDetailContent({ locale, id, pageNum }: { locale: Locale; id: n
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateBoxJsonLd({
+            name: box.name,
+            description: box.description,
+            logoUrl: box.logoUrl,
+            id: box.id,
+            gameCount: box.gameCount,
+            discountRate: box.discountRate,
+            websiteUrl: box.websiteUrl,
+          })),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateBreadcrumbJsonLd([
+            { name: t.home, url: locale === defaultLocale ? '/' : `/${locale}` },
+            { name: t.boxes, url: locale === defaultLocale ? '/boxes' : `/${locale}/boxes` },
+            { name: box.name, url: locale === defaultLocale ? `/boxes/${id}` : `/${locale}/boxes/${id}` },
+          ])),
+        }}
+      />
       <nav className="container mx-auto px-4 py-4 text-sm text-slate-400 flex items-center">
         <Link href={lp('/')} className="hover:text-white">{t.home}</Link>
         <ChevronRight className="h-4 w-4 mx-2" />
@@ -203,7 +265,7 @@ async function BoxDetailContent({ locale, id, pageNum }: { locale: Locale; id: n
               <div className="w-24 h-24 rounded-2xl overflow-hidden bg-slate-800 shadow-xl shrink-0 border border-slate-700">
                 <ImageWithFallback
                   src={box.logoUrl}
-                  alt={box.name || 'box'}
+                  alt={box.name ? `${box.name} - 游戏盒子官方Logo` : '游戏盒子Logo'}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -290,7 +352,7 @@ async function BoxDetailContent({ locale, id, pageNum }: { locale: Locale; id: n
                   <div className="aspect-square bg-slate-800 relative overflow-hidden">
                     <ImageWithFallback
                       src={game.iconUrl}
-                      alt={game.name || 'game'}
+                      alt={game.name ? `${game.name}${game.categoryName ? ` - ${game.categoryName}` : ''}` : '游戏图标'}
                       className="w-full h-full object-cover"
                     />
                     {game.isNew === '1' && (

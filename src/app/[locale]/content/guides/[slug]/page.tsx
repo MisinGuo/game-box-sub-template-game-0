@@ -3,6 +3,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ApiClient from '@/lib/api'
 import { ArticleLayout } from '@/components/content/ArticleLayout'
+import { generateArticleJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
 import { getModuleConfig } from '@/config'
 import { isValidLocale, supportedLocales, defaultLocale, type Locale } from '@/config/site/locales'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
@@ -83,6 +84,7 @@ export async function generateMetadata({
   
   const locale = localeParam as Locale
   const guide = await getGuideDetail(slug, locale)
+  const availableGuideLocales = await getAvailableGuideLocales(slug)
   
   if (!guide) {
     return {
@@ -97,6 +99,14 @@ export async function generateMetadata({
   const imageUrl = guide.coverImage || '/default-og-image.jpg'
   const titleSuffix = locale === 'zh-TW' ? ' | 遊戲攻略' : locale === 'en-US' ? ' | Game Guides' : ' | 游戏攻略'
   const siteNameStr = locale === 'zh-TW' ? '遊戲攻略' : locale === 'en-US' ? 'Game Guides' : '游戏攻略'
+
+  const languages: Record<string, string> = {}
+  if (availableGuideLocales.length > 1) {
+    availableGuideLocales.forEach(l => {
+      languages[l] = l === defaultLocale ? `/content/guides/${slug}` : `/${l}/content/guides/${slug}`
+    })
+    languages['x-default'] = `/content/guides/${slug}`
+  }
 
   return {
     title: `${guide.title}${titleSuffix}`,
@@ -131,6 +141,7 @@ export async function generateMetadata({
     },
     alternates: {
       canonical: guideUrl,
+      ...(availableGuideLocales.length > 1 && { languages }),
     },
   }
 }
@@ -155,9 +166,37 @@ export default async function GuideDetailPage({
   }
 
   const categoryHref = locale === defaultLocale ? '/content/guides' : `/${locale}/content/guides`
+  const guideUrl = locale === defaultLocale ? `/content/guides/${slug}` : `/${locale}/content/guides/${slug}`
 
   return (
-    <ArticleLayout
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateArticleJsonLd({
+            title: guide.title,
+            description: guide.description,
+            coverImage: guide.coverImage,
+            author: guide.author,
+            createTime: guide.createTime,
+            updateTime: guide.updateTime,
+            url: guideUrl,
+            tags: guide.tags,
+          })),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateBreadcrumbJsonLd([
+            { name: locale === 'zh-TW' ? '首頁' : locale === 'en-US' ? 'Home' : '首页', url: locale === defaultLocale ? '/' : `/${locale}` },
+            { name: locale === 'zh-TW' ? '內容中心' : locale === 'en-US' ? 'Content' : '内容中心', url: locale === defaultLocale ? '/content' : `/${locale}/content` },
+            { name: locale === 'zh-TW' ? '攻略' : locale === 'en-US' ? 'Guides' : '攻略', url: locale === defaultLocale ? '/content/guides' : `/${locale}/content/guides` },
+            { name: guide.title, url: guideUrl },
+          ])),
+        }}
+      />
+      <ArticleLayout
       config={moduleConfig}
       frontmatter={{
         title: guide.title,
@@ -173,5 +212,6 @@ export default async function GuideDetailPage({
       availableLocales={availableLocales}
       breadcrumbCategoryHref={categoryHref}
     />
+    </>
   )
 }

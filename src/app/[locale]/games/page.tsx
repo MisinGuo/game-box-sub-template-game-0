@@ -10,6 +10,8 @@ import { fallbackMetadata } from '@/config/fallback-metadata'
 import { generateListMetadata } from '@/lib/metadata'
 import { gamesListConfig } from '@/config/pages/games'
 import ApiClient from '@/lib/api'
+import { generateCollectionPageJsonLd } from '@/lib/jsonld'
+import { siteConfig } from '@/config'
 
 export async function generateStaticParams() {
   return supportedLocales
@@ -33,12 +35,29 @@ export async function generateMetadata({
 
   const locale = localeParam as Locale
   const fallback = fallbackMetadata.games
+  const listPath = '/games'
+  const languages: Record<string, string> = {}
+  supportedLocales.forEach(l => {
+    languages[l] = l === defaultLocale ? listPath : `/${l}${listPath}`
+  })
+  languages['x-default'] = listPath
 
-  return generateListMetadata(locale, 'games', {
+  const base = await generateListMetadata(locale, 'games', {
     title: fallback.title[locale],
     description: fallback.description[locale],
     keywords: fallback.keywords?.[locale],
   })
+  return {
+    ...base,
+    openGraph: {
+      type: 'website',
+      images: [{ url: siteConfig.ogImage, width: 1200, height: 630 }],
+    },
+    alternates: {
+      canonical: locale === defaultLocale ? listPath : `/${locale}${listPath}`,
+      languages,
+    },
+  }
 }
 
 // 启用请求期渲染与分块流式输出
@@ -381,8 +400,19 @@ export default async function LocalizedGamesPage({
 
   const locale = localeParam as Locale
 
+  const jsonLd = generateCollectionPageJsonLd({
+    name: gamesListConfig.hero.title[locale],
+    description: gamesListConfig.hero.description[locale],
+    url: locale === defaultLocale ? '/games' : `/${locale}/games`,
+    items: [],
+  })
+
   return (
     <div className="bg-slate-950 min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <nav className="container mx-auto px-4 py-4 text-sm text-slate-400 flex items-center">
         <Link href={locale === defaultLocale ? '/' : `/${locale}`} className="hover:text-white">{getTranslation('home', locale)}</Link>
         <ChevronRight className="h-4 w-4 mx-2" />

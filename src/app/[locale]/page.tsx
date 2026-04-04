@@ -12,6 +12,7 @@ import ApiClient from '@/lib/api'
 import { generateHomeMetadata } from '@/lib/metadata'
 import { formatCount, formatMoney } from '@/lib/format'
 import ImageWithFallback from './ImageWithFallback'
+import { generateWebSiteJsonLd, generateOrganizationJsonLd } from '@/lib/jsonld'
 import type { Metadata } from 'next'
 import type { Locale } from '@/config/types'
 import type { ArticleListItem, GameListItem } from '@/lib/api-types'
@@ -37,12 +38,26 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
   if (!supportedLocales.includes(currentLocale as any)) {
     return {}
   }
-  
-  return generateHomeMetadata(
+
+  const listPath = '/'
+  const languages: Record<string, string> = {}
+  supportedLocales.forEach(l => {
+    languages[l] = l === defaultLocale ? listPath : `/${l}`
+  })
+  languages['x-default'] = listPath
+
+  const base = await generateHomeMetadata(
     currentLocale,
     fallbackMetadata.home.title[currentLocale],
     fallbackMetadata.home.description[currentLocale]
   )
+  return {
+    ...base,
+    alternates: {
+      canonical: currentLocale === defaultLocale ? '/' : `/${currentLocale}`,
+      languages,
+    },
+  }
 }
 
 function HomeSectionsSkeleton() {
@@ -187,7 +202,7 @@ async function HomeDataSections({ currentLocale }: { currentLocale: Locale }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {strategyArticles.length > 0 ? (
             strategyArticles.map((article: ArticleListItem) => (
-              <Link key={article.id} href={lp(`/content/guides/${article.id}`)}>
+              <Link key={article.masterArticleId} href={lp(`/content/guides/${article.masterArticleId}`)}>
                 <Card className="bg-slate-900 border-slate-800 overflow-hidden hover:border-slate-700 transition-colors cursor-pointer group h-full">
                   <div className="aspect-video bg-slate-800 relative overflow-hidden">
                     <ImageWithFallback
@@ -286,6 +301,15 @@ export default async function LocaleHomePage({ params }: { params: Promise<{ loc
   
   return (
     <div className="bg-slate-950 min-h-screen pb-12">
+      {/* JSON-LD 结构化数据 */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(generateWebSiteJsonLd()) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(generateOrganizationJsonLd()) }}
+      />
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden border-b border-slate-800">
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-slate-950 pointer-events-none" />

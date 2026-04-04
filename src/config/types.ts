@@ -192,7 +192,7 @@ export interface SiteConfig {
   /** SEO关键词 */
   keywords?: string[]
   /** Open Graph图片 */
-  ogImage?: string
+  ogImage: string
   /** 默认语言 */
   defaultLocale?: string
   /** 支持的语言列表 */

@@ -13,8 +13,9 @@ import GameBoxes from '@/components/game/GameBoxes'
 import type { BoxRelation } from '@/components/game/GameBoxes'
 import RelatedGames from '@/components/game/RelatedGames'
 import ScreenshotLightbox from '@/components/game/ScreenshotLightbox'
+import { generateGameJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
 import { gamePageTranslations, getT } from '@/i18n/page-translations'
-import { defaultLocale } from '@/config/site/locales'
+import { defaultLocale, supportedLocales, type Locale } from '@/config/site/locales'
 
 // 游戏类型定义
 interface Game {
@@ -61,6 +62,45 @@ interface PageProps {
 // 请求期渲染 + 数据缓存，避免穿透到后端
 export const dynamic = 'auto'
 export const revalidate = 300
+
+export async function generateStaticParams() {
+  const params: { locale: string; id: string }[] = []
+  try {
+    const response = await ApiClient.getGames(
+      { pageSize: 100, pageNum: 1 },
+      { next: { revalidate: 3600 } }
+    )
+    if (response.code === 200 && response.rows) {
+      for (const game of response.rows) {
+        params.push({ locale: defaultLocale, id: String(game.id) })
+        for (const locale of supportedLocales) {
+          if (locale !== defaultLocale) {
+            params.push({ locale, id: String(game.id) })
+          }
+        }
+      }
+    }
+  } catch {
+    // 构建期 API 不可用时静默跳过
+  }
+  return params
+}
+
+// 获取游戏可用语言版本（cache() 防止重复请求）
+const getAvailableGameLocales = cache(async (id: string): Promise<Locale[]> => {
+  try {
+    const response = await ApiClient.getArticleLocales(parseInt(id, 10))
+    if (response.code === 200 && Array.isArray(response.data)) {
+      const available = response.data.filter((l: string) =>
+        supportedLocales.includes(l as any)
+      ) as Locale[]
+      return available.length > 0 ? available : [defaultLocale]
+    }
+  } catch (error) {
+    console.warn(`获取游戏 ${id} 语言版本失败:`, error)
+  }
+  return [defaultLocale]
+})
 
 // 获取游戏数据（cache() 确保同一次渲染内相同参数只发一次请求）
 const getGameData = cache(async (id: string, locale: string) => {
@@ -275,10 +315,39 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   
   const { game } = data
   const t = getT(gamePageTranslations, locale)
-  
+  const gameUrl = locale === defaultLocale ? `/games/${id}` : `/${locale}/games/${id}`
+  const imageUrl = game.coverUrl || game.iconUrl || ''
+  const description = game.description || `${t.metaDescPrefix}${game.name}${t.metaDescSuffix}`
+
+  const availableGameLocales = await getAvailableGameLocales(id)
+  const languages: Record<string, string> = {}
+  if (availableGameLocales.length > 1) {
+    availableGameLocales.forEach(l => {
+      languages[l] = l === defaultLocale ? `/games/${id}` : `/${l}/games/${id}`
+    })
+    languages['x-default'] = `/games/${id}`
+  }
+
   return {
     title: `${game.name}${t.metaTitleSuffix}`,
-    description: game.description || `${t.metaDescPrefix}${game.name}${t.metaDescSuffix}`,
+    description,
+    openGraph: {
+      title: game.name,
+      description,
+      url: gameUrl,
+      type: 'website',
+      images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: game.name }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: game.name,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+    alternates: {
+      canonical: gameUrl,
+      ...(availableGameLocales.length > 1 && { languages }),
+    },
   }
 }
 
@@ -309,6 +378,21 @@ export default async function GameDetailPage({ params }: PageProps) {
   
   return (
     <div className="min-h-screen bg-slate-950">
+      {/* JSON-LD 结构化数据 */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(generateGameJsonLd(game)) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateBreadcrumbJsonLd([
+            { name: t.home, url: localePath('/') },
+            { name: t.gameLibrary, url: localePath('/games') },
+            { name: game.name, url: localePath(`/games/${id}`) },
+          ])),
+        }}
+      />
       {/* Hero Banner —— 模糊封面背景 */}
       <div className="relative overflow-hidden">
         {/* 背景模糊封面 */}

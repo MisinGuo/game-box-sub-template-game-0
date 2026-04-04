@@ -14,8 +14,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
-        disallow: ['/api/', '/admin/', '/_next/'],
+        allow: ['/', '/_next/static/', '/_next/image/', '/fonts/'],
+        disallow: ['/api/', '/admin/', '/_next/webpack-hmr'],
       },
     ],
     sitemap: `${hostname}/sitemap.xml`,

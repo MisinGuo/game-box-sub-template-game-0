@@ -8,6 +8,15 @@ import type { Locale } from '@/config/types'
 import { metadataTemplates } from '@/config/fallback-metadata'
 import ApiClient from './api'
 
+/** 截断 description 至 SEO 最佳长度（150-160 字符） */
+export function truncateDescription(desc: string, maxLen: number = 160): string {
+  if (!desc) return ''
+  if (desc.length <= maxLen) return desc
+  const truncated = desc.substring(0, maxLen - 3)
+  const lastSpace = truncated.lastIndexOf(' ')
+  return (lastSpace > maxLen - 20 ? truncated.substring(0, lastSpace) : truncated) + '...'
+}
+
 /**
  * 生成页面 metadata，优先使用后端网站配置，失败时使用降级配置
  * 
@@ -47,7 +56,7 @@ export async function generatePageMetadata(
       
       return {
         title,
-        description,
+        description: truncateDescription(description),
         keywords: siteConfig.seoKeywords,
       }
     }

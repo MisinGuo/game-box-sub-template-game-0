@@ -3,6 +3,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ApiClient from '@/lib/api'
 import { ArticleLayout } from '@/components/content/ArticleLayout'
+import { generateArticleJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
 import { getModuleConfig } from '@/config'
 import { isValidLocale, supportedLocales, defaultLocale, type Locale } from '@/config/site/locales'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
@@ -85,6 +86,7 @@ export async function generateMetadata({
 
   const locale = localeParam as Locale
   const news = await getNewsDetail(slug, locale)
+  const availableNewsLocales = await getAvailableNewsLocales(slug)
 
   if (!news) {
     return {
@@ -98,6 +100,14 @@ export async function generateMetadata({
   const imageUrl = news.coverImage || '/default-og-image.jpg'
   const titleSuffix = locale === 'en-US' ? ' | Game News' : locale === 'zh-TW' ? ' | 遊戲資訊' : ' | 游戏资讯'
   const siteName = locale === 'en-US' ? 'Game News' : locale === 'zh-TW' ? '遊戲資訊速報' : '游戏资讯速报'
+
+  const languages: Record<string, string> = {}
+  if (availableNewsLocales.length > 1) {
+    availableNewsLocales.forEach(l => {
+      languages[l] = l === defaultLocale ? `/news/${slug}` : `/${l}/news/${slug}`
+    })
+    languages['x-default'] = `/news/${slug}`
+  }
 
   return {
     title: `${news.title}${titleSuffix}`,
@@ -123,7 +133,10 @@ export async function generateMetadata({
       description,
       images: [imageUrl],
     },
-    alternates: { canonical: newsUrl },
+    alternates: {
+      canonical: newsUrl,
+      ...(availableNewsLocales.length > 1 && { languages }),
+    },
   }
 }
 
@@ -149,15 +162,43 @@ export default async function NewsDetailPage({
     news.categoryName || (locale === 'en-US' ? 'News' : locale === 'zh-TW' ? '資訊' : '资讯')
   )}`
 
+  const newsUrl = locale === defaultLocale ? `/news/${slug}` : `/${locale}/news/${slug}`
+
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-background p-4">
-        <div className="max-w-4xl mx-auto">
-          <ArticleContentSkeleton />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateArticleJsonLd({
+            title: news.title,
+            description: news.description,
+            coverImage: news.coverImage,
+            author: news.author,
+            createTime: news.createTime,
+            updateTime: news.updateTime,
+            url: newsUrl,
+            tags: news.tags,
+          })),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateBreadcrumbJsonLd([
+            { name: locale === 'zh-TW' ? '首頁' : locale === 'en-US' ? 'Home' : '首页', url: locale === defaultLocale ? '/' : `/${locale}` },
+            { name: locale === 'zh-TW' ? '遊戲資訊' : locale === 'en-US' ? 'News' : '游戏资讯', url: locale === defaultLocale ? '/news' : `/${locale}/news` },
+            { name: news.title, url: newsUrl },
+          ])),
+        }}
+      />
+      <Suspense fallback={
+        <div className="min-h-screen bg-background p-4">
+          <div className="max-w-4xl mx-auto">
+            <ArticleContentSkeleton />
+          </div>
         </div>
-      </div>
-    }>
-      <NewsArticleContent
+      }>
+        <NewsArticleContent
         id={slug}
         news={news}
         categoryHref={categoryHref}
@@ -165,6 +206,7 @@ export default async function NewsDetailPage({
         moduleConfig={moduleConfig}
       />
     </Suspense>
+    </>
   )
 }
 

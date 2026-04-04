@@ -3,8 +3,9 @@ import Link from 'next/link'
 import { ChevronRight, ArrowRight, BookOpen, Star, FolderOpen } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { isValidLocale, supportedLocales, type Locale } from '@/config/site/locales'
+import { isValidLocale, supportedLocales, defaultLocale, type Locale } from '@/config/site/locales'
 import { generateListMetadata } from '@/lib/metadata'
+import { generateCollectionPageJsonLd } from '@/lib/jsonld'
 
 export async function generateStaticParams() {
   return supportedLocales.map(locale => ({ locale }))
@@ -25,12 +26,25 @@ export async function generateMetadata({
   }
   
   const locale = localeParam as Locale
-  
-  return generateListMetadata(locale, 'strategy', {
-    title: locale === 'zh-CN' ? '内容中心 - 盒子攻略·游戏评测·省钱专题' : locale === 'zh-TW' ? '內容中心 - 盒子攻略·遊戲評測·省錢專題' : 'Content Center - Box Guides, Reviews & Topics',
-    description: locale === 'zh-CN' ? '盒子选购指南、礼包领取攻略、游戏横评、省钱专题 - AI全程维护' : locale === 'zh-TW' ? '盒子選購指南、禮包領取攻略、遊戲橫評、省錢專題 - AI全程維護' : 'Box guides, gift pack tips, game reviews and saving topics',
-    keywords: '游戏盒子攻略,礼包领取,游戏横评,手游省钱',
+  const listPath = '/content'
+  const languages: Record<string, string> = {}
+  supportedLocales.forEach(l => {
+    languages[l] = l === defaultLocale ? listPath : `/${l}${listPath}`
   })
+  languages['x-default'] = listPath
+
+  const base = await generateListMetadata(locale, 'strategy', {
+    title: locale === 'zh-CN' ? '内容中心 - 盒子攻略·游戏评测·省錢专题' : locale === 'zh-TW' ? '內容中心 - 盒子攻略·遲戲評測·省錢專題' : 'Content Center - Box Guides, Reviews & Topics',
+    description: locale === 'zh-CN' ? '盒子选购指南、礼包领取攻略、游戏横评、省錢专题 - AI全程维护' : locale === 'zh-TW' ? '盒子選購指南、礼包領取攻略、遲戲横評、省錢專題 - AI全程维護' : 'Box guides, gift pack tips, game reviews and saving topics',
+    keywords: '游戏盒子攻略,礼包领取,游戏横评,手游省錢',
+  })
+  return {
+    ...base,
+    alternates: {
+      canonical: locale === defaultLocale ? listPath : `/${locale}${listPath}`,
+      languages,
+    },
+  }
 }
 
 export const dynamic = 'auto'
@@ -109,6 +123,20 @@ export default async function ContentCenterPage({
 
   return (
     <div className="min-h-screen bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateCollectionPageJsonLd({
+            name: t('heroTitle'),
+            description: t('heroDesc'),
+            url: basePath ? `${basePath}/content` : '/content',
+            items: categories.map((cat) => ({
+              name: cat.title,
+              url: cat.href,
+            })),
+          })),
+        }}
+      />
       {/* 面包屑 */}
       <div className="container py-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

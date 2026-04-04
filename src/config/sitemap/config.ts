@@ -12,8 +12,8 @@ export const sitemapConfig: SitemapConfig = {
   ],
   // 默认域名（当请求来自非白名单域名时使用）
   defaultHostname: 'https://www.5awyx.com',
-  // 为避免单文件生成过重导致 1102，设置为更保守的分片大小
-  maxUrlsPerSitemap: 1000,
+  // 每个 sitemap 文件最多收录的 URL 数量（Google 支持最多 50000 条）
+  maxUrlsPerSitemap: 10000,
   
   // 各内容类型的默认配置
   contentTypes: {

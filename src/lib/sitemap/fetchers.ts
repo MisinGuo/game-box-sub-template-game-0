@@ -7,6 +7,19 @@ import { SiteSectionSlugGroups } from '@/config/pages/content'
 import { getEnabledRoutes } from '@/config/site/routes'
 
 const { contentTypes } = sitemapConfig
+
+/**
+ * 将后端返回的时间字符串（如 "2026-03-26 16:21:24"）规范化为 ISO 8601 格式
+ * sitemap 标准要求 W3C Datetime 格式，Google 强制需要时区信息
+ */
+function toSitemapLastmod(value?: string | null): string {
+  if (!value) return new Date().toISOString()
+  // 已经是标准 ISO 格式（含 T）则直接返回
+  if (value.includes('T')) return value
+  // 将 "2026-03-26 16:21:24" 转为 "2026-03-26T16:21:24Z"
+  return value.replace(' ', 'T') + 'Z'
+}
+
 const GAME_CATEGORY_PAGE_SIZE = 24
 const GAME_API_PAGE_SIZE = 100
 const GAME_FETCH_CONCURRENCY = 4
@@ -264,7 +277,7 @@ async function fetchArticlesBySections(locale: string, sections: readonly string
       if (response.code === 200 && response.rows) {
         for (const article of response.rows) {
           if (article?.id) {
-            articleMap.set(article.id, article)
+            articleMap.set(article.masterArticleId, article)
           }
         }
       }
@@ -389,7 +402,7 @@ export async function fetchGameUrls(locale: string, hostname: string): Promise<S
       const path = `/games/${game.id}`
       urls.push({
         loc: `${hostname}${localePrefix}${path}`,
-        lastmod: game.updateTime || new Date().toISOString(),
+        lastmod: toSitemapLastmod(game.updateTime),
         changefreq: config.changefreq as any,
         priority: config.priority,
         alternates: generateAlternateUrls(path, hostname),
@@ -519,7 +532,7 @@ function buildGameDetailSitemapUrl(game: any, localePrefix: string, hostname: st
   const path = `/games/${game.id}`
   return {
     loc: `${hostname}${localePrefix}${path}`,
-    lastmod: game.updateTime || new Date().toISOString(),
+    lastmod: toSitemapLastmod(game.updateTime),
     changefreq: contentTypes.games.changefreq as any,
     priority: contentTypes.games.priority,
     alternates: generateAlternateUrls(path, hostname),
@@ -681,7 +694,7 @@ export async function fetchBoxUrls(locale: string, hostname: string): Promise<Si
       const detailPath = `/boxes/${box.id}`
       urls.push({
         loc: `${hostname}${localePrefix}${detailPath}`,
-        lastmod: box.updateTime || new Date().toISOString(),
+        lastmod: toSitemapLastmod(box.updateTime),
         changefreq: config.changefreq as any,
         priority: config.priority,
         alternates: generateAlternateUrls(detailPath, hostname),
@@ -691,7 +704,7 @@ export async function fetchBoxUrls(locale: string, hostname: string): Promise<Si
       const downloadPath = `/boxes/${box.id}/download`
       urls.push({
         loc: `${hostname}${localePrefix}${downloadPath}`,
-        lastmod: box.updateTime || new Date().toISOString(),
+        lastmod: toSitemapLastmod(box.updateTime),
         changefreq: config.changefreq as any,
         priority: 0.7,
         alternates: generateAlternateUrls(downloadPath, hostname),
@@ -715,10 +728,10 @@ export async function fetchGuidesUrls(locale: string, hostname: string): Promise
     const localePrefix = locale === defaultLocale ? '' : `/${locale}`
     
     return articles.map((article: any) => {
-      const path = `/content/guides/${article.id}`
+      const path = `/content/guides/${article.masterArticleId}`
       return {
         loc: `${hostname}${localePrefix}${path}`,
-        lastmod: article.updateTime || new Date().toISOString(),
+        lastmod: toSitemapLastmod(article.updateTime),
         changefreq: config.changefreq as any,
         priority: config.priority,
         alternates: generateAlternateUrls(path, hostname),
@@ -740,10 +753,10 @@ export async function fetchNewsUrls(locale: string, hostname: string): Promise<S
     const localePrefix = locale === defaultLocale ? '' : `/${locale}`
     
     return articles.map((article: any) => {
-      const path = `/news/${article.id}`
+      const path = `/news/${article.masterArticleId}`
       return {
         loc: `${hostname}${localePrefix}${path}`,
-        lastmod: article.updateTime || new Date().toISOString(),
+        lastmod: toSitemapLastmod(article.updateTime),
         changefreq: config.changefreq as any,
         priority: config.priority,
         alternates: generateAlternateUrls(path, hostname),
@@ -765,10 +778,10 @@ export async function fetchReviewsUrls(locale: string, hostname: string): Promis
     const localePrefix = locale === defaultLocale ? '' : `/${locale}`
 
     return articles.map((article: any) => {
-      const path = `/content/reviews/${article.id}`
+      const path = `/content/reviews/${article.masterArticleId}`
       return {
         loc: `${hostname}${localePrefix}${path}`,
-        lastmod: article.updateTime || new Date().toISOString(),
+        lastmod: toSitemapLastmod(article.updateTime),
         changefreq: config.changefreq as any,
         priority: config.priority,
         alternates: generateAlternateUrls(path, hostname),
@@ -790,10 +803,10 @@ export async function fetchTopicsUrls(locale: string, hostname: string): Promise
     const localePrefix = locale === defaultLocale ? '' : `/${locale}`
 
     return articles.map((article: any) => {
-      const path = `/content/topics/${article.id}`
+      const path = `/content/topics/${article.masterArticleId}`
       return {
         loc: `${hostname}${localePrefix}${path}`,
-        lastmod: article.updateTime || new Date().toISOString(),
+        lastmod: toSitemapLastmod(article.updateTime),
         changefreq: config.changefreq as any,
         priority: config.priority,
         alternates: generateAlternateUrls(path, hostname),

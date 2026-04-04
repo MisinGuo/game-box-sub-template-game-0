@@ -4,10 +4,12 @@ import { ChevronRight, Package, Gift, Calendar, TrendingUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import ApiClient from '@/lib/api'
-import { isValidLocale, supportedLocales, getTranslation, type Locale } from '@/config/site/locales'
+import { isValidLocale, supportedLocales, defaultLocale, getTranslation, type Locale } from '@/config/site/locales'
 import { generateListMetadata } from '@/lib/metadata'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
 import ImageWithFallback from '../../ImageWithFallback'
+import { generateCollectionPageJsonLd } from '@/lib/jsonld'
+import { siteConfig } from '@/config'
 
 export async function generateStaticParams() {
   return supportedLocales.map(locale => ({ locale }))
@@ -25,19 +27,36 @@ export async function generateMetadata({
   }
   
   const locale = localeParam as Locale
-  
-  return generateListMetadata(locale, 'strategy', {
-    title: locale === 'zh-CN' ? '盒子攻略 - 怎么选盒子·礼包怎么领' : locale === 'zh-TW' ? '盒子攻略 - 怎麼選盒子·禮包怎麼領' : 'Box & Gift Pack Guides',
-    description: locale === 'zh-CN' ? '游戏盒子折扣对比攻略，礼包码领取教程，数据说话帮你省钱' : locale === 'zh-TW' ? '遊戲盒子折扣對比攻略，禮包碼領取教程，數據說話幫你省錢' : 'Game box discount guides and gift pack tutorials to save money',
-    keywords: locale === 'zh-CN' ? '游戏盒子攻略,礼包领取,盒子对比,手游省钱' : 'game box guide,gift pack,box comparison',
+  const listPath = '/content/guides'
+  const languages: Record<string, string> = {}
+  supportedLocales.forEach(l => {
+    languages[l] = l === defaultLocale ? listPath : `/${l}${listPath}`
   })
+  languages['x-default'] = listPath
+
+  const base = await generateListMetadata(locale, 'strategy', {
+    title: locale === 'zh-CN' ? '盒子攻略 - 怎么选盒子·礼包怎么领' : locale === 'zh-TW' ? '盒子攻略 - 怎麼選盒子·礼包怎麼颗' : 'Box & Gift Pack Guides',
+    description: locale === 'zh-CN' ? '游戏盒子折扣对比攻略，礼包码领取教程，数据说话帮你省錢' : locale === 'zh-TW' ? '遲戲盒子折扣對比攻略，礼包碼顓取教程，數據說話幫你省錢' : 'Game box discount guides and gift pack tutorials to save money',
+    keywords: locale === 'zh-CN' ? '游戏盒子攻略,礼包领取,盒子对比,手游省錢' : 'game box guide,gift pack,box comparison',
+  })
+  return {
+    ...base,
+    openGraph: {
+      type: 'website',
+      images: [{ url: siteConfig.ogImage, width: 1200, height: 630 }],
+    },
+    alternates: {
+      canonical: locale === defaultLocale ? listPath : `/${locale}${listPath}`,
+      languages,
+    },
+  }
 }
 
 export const dynamic = 'auto'
 export const revalidate = 180
 
 interface GuideArticle {
-  id: number
+  masterArticleId: number
   title: string
   description?: string
   coverImage?: string
@@ -62,8 +81,8 @@ async function getArticlesBySections(locale: Locale, sections: readonly string[]
 
       if (response.code === 200 && response.rows) {
         for (const article of response.rows as GuideArticle[]) {
-          if (article?.id) {
-            articleMap.set(article.id, article)
+          if (article?.masterArticleId) {
+            articleMap.set(article.masterArticleId, article)
           }
         }
       }
@@ -118,8 +137,20 @@ export default async function GuidesPage({
   
   const t = (key: string) => getTranslation(key, locale)
   const basePath = locale === 'zh-CN' ? '' : `/${locale}`
+
+  const jsonLd = generateCollectionPageJsonLd({
+    name: locale === 'zh-CN' ? '游戏攻略' : locale === 'zh-TW' ? '遊戲攻略' : 'Game Guides',
+    description: locale === 'zh-CN' ? '游戏盒子折扣对比攻略，礼包码领取教程' : 'Game box guides and gift pack tutorials',
+    url: locale === 'zh-CN' ? '/content/guides' : `/${locale}/content/guides`,
+    items: articles.slice(0, 10).map(a => ({
+      name: a.title,
+      url: `${basePath}/content/guides/${a.masterArticleId}`,
+      image: a.coverUrl || a.coverImage,
+    })),
+  })
+
   const ArticleCard = ({ article }: { article: GuideArticle }) => (
-    <Link href={`${basePath}/content/guides/${article.id}`} className="group">
+    <Link href={`${basePath}/content/guides/${article.masterArticleId}`} className="group">
       <Card className="h-full hover:shadow-lg transition-all hover:border-amber-500/50">
         <div className={`grid ${(article.coverUrl || article.coverImage) ? 'md:grid-cols-[120px_1fr]' : ''} gap-0`}>
           {(article.coverUrl || article.coverImage) && (
@@ -158,6 +189,10 @@ export default async function GuidesPage({
 
   return (
     <div className="min-h-screen bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* 面包屑 */}
       <div className="container py-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -223,7 +258,7 @@ export default async function GuidesPage({
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {items.map(article => (
-                <ArticleCard key={article.id} article={article} />
+                <ArticleCard key={article.masterArticleId} article={article} />
               ))}
             </div>
           </div>

@@ -7,6 +7,8 @@ import { fallbackMetadata } from '@/config/fallback-metadata'
 import { generateListMetadata } from '@/lib/metadata'
 import { boxesListConfig } from '@/config/pages/boxes'
 import ApiClient from '@/lib/api'
+import { generateCollectionPageJsonLd } from '@/lib/jsonld'
+import { siteConfig } from '@/config'
 
 export async function generateStaticParams() {
   return supportedLocales
@@ -34,12 +36,29 @@ export async function generateMetadata({
 
   const locale = localeParam as Locale
   const fallback = fallbackMetadata.boxes
+  const listPath = '/boxes'
+  const languages: Record<string, string> = {}
+  supportedLocales.forEach(l => {
+    languages[l] = l === defaultLocale ? listPath : `/${l}${listPath}`
+  })
+  languages['x-default'] = listPath
 
-  return generateListMetadata(locale, 'boxes', {
+  const base = await generateListMetadata(locale, 'boxes', {
     title: fallback.title[locale],
     description: fallback.description[locale],
     keywords: fallback.keywords?.[locale],
   })
+  return {
+    ...base,
+    openGraph: {
+      type: 'website',
+      images: [{ url: siteConfig.ogImage, width: 1200, height: 630 }],
+    },
+    alternates: {
+      canonical: locale === defaultLocale ? listPath : `/${locale}${listPath}`,
+      languages,
+    },
+  }
 }
 
 interface BoxStats {
@@ -195,8 +214,19 @@ export default async function LocalizedBoxesPage({
 
   const locale = localeParam as Locale
 
+  const jsonLd = generateCollectionPageJsonLd({
+    name: boxesListConfig.hero.title[locale],
+    description: boxesListConfig.hero.description[locale],
+    url: locale === defaultLocale ? '/boxes' : `/${locale}/boxes`,
+    items: [],
+  })
+
   return (
     <div className="bg-slate-950 min-h-screen py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="mb-12 text-center">
           <h1 className="text-4xl font-bold text-white mb-3">{boxesListConfig.hero.title[locale]}</h1>

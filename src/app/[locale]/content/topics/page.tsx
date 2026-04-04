@@ -4,10 +4,11 @@ import { ChevronRight, Layers, Calendar, TrendingUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import ApiClient from '@/lib/api'
-import { isValidLocale, supportedLocales, getTranslation, type Locale } from '@/config/site/locales'
+import { isValidLocale, supportedLocales, defaultLocale, getTranslation, type Locale } from '@/config/site/locales'
 import { generateListMetadata } from '@/lib/metadata'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
 import ImageWithFallback from '../../ImageWithFallback'
+import { generateCollectionPageJsonLd } from '@/lib/jsonld'
 
 export async function generateStaticParams() {
   return supportedLocales.map(locale => ({ locale }))
@@ -25,8 +26,14 @@ export async function generateMetadata({
   }
 
   const locale = localeParam as Locale
+  const listPath = '/content/topics'
+  const languages: Record<string, string> = {}
+  supportedLocales.forEach(l => {
+    languages[l] = l === defaultLocale ? listPath : `/${l}${listPath}`
+  })
+  languages['x-default'] = listPath
 
-  return generateListMetadata(locale, 'strategy', {
+  const base = await generateListMetadata(locale, 'strategy', {
     title:
       locale === 'zh-CN'
         ? '专题中心 - 排行榜·省钱·礼包·品类推荐'
@@ -44,13 +51,20 @@ export async function generateMetadata({
         ? '游戏排行榜,手游省钱,礼包大全,手游推荐'
         : 'game ranking,mobile game saving,gift pack list,game recommendation',
   })
+  return {
+    ...base,
+    alternates: {
+      canonical: locale === defaultLocale ? listPath : `/${locale}${listPath}`,
+      languages,
+    },
+  }
 }
 
 export const dynamic = 'auto'
 export const revalidate = 180
 
 interface TopicArticle {
-  id: number
+  masterArticleId: number
   title: string
   description?: string
   coverImage?: string
@@ -74,8 +88,8 @@ async function getArticlesBySections(locale: Locale, sections: readonly string[]
 
       if (response.code === 200 && response.rows) {
         for (const article of response.rows as TopicArticle[]) {
-          if (article?.id) {
-            articleMap.set(article.id, article)
+          if (article?.masterArticleId) {
+            articleMap.set(article.masterArticleId, article)
           }
         }
       }
@@ -132,7 +146,7 @@ export default async function TopicsPage({
   const basePath = locale === 'zh-CN' ? '' : `/${locale}`
 
   const ArticleCard = ({ article }: { article: TopicArticle }) => (
-    <Link href={`${basePath}/content/topics/${article.id}`} className="group">
+    <Link href={`${basePath}/content/topics/${article.masterArticleId}`} className="group">
       <Card className="h-full hover:shadow-lg transition-all hover:border-emerald-500/50">
         <div className={`grid ${article.coverImage ? 'md:grid-cols-[120px_1fr]' : ''} gap-0`}>
           {article.coverImage && (
@@ -172,6 +186,25 @@ export default async function TopicsPage({
 
   return (
     <div className="min-h-screen bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateCollectionPageJsonLd({
+            name: locale === 'zh-CN' ? '专题' : locale === 'zh-TW' ? '專題' : 'Topics',
+            description: locale === 'zh-CN'
+              ? '系统自动维护的游戏专题：热度排行榜、省钱攻略、礼包大全、品类精选'
+              : locale === 'zh-TW'
+              ? '系統自動維護的遊戲專題：熱度排行榜、省錢攻略、禮包大全、品類精選'
+              : 'Auto-maintained game topics: rankings, saving guides, gift packs, category picks.',
+            url: basePath ? `${basePath}/content/topics` : '/content/topics',
+            items: articles.slice(0, 30).map((article) => ({
+              name: article.title,
+              url: `${basePath}/content/topics/${article.masterArticleId}`,
+              image: article.coverImage,
+            })),
+          })),
+        }}
+      />
       {/* 面包屑 */}
       <div className="container py-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -236,7 +269,7 @@ export default async function TopicsPage({
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {items.map((article: TopicArticle) => (
-                <ArticleCard key={article.id} article={article} />
+                <ArticleCard key={article.masterArticleId} article={article} />
               ))}
             </div>
           </div>

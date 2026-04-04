@@ -8,11 +8,13 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import ImageWithFallback from '../../../ImageWithFallback'
 import { backendConfig } from '@/config/api/backend'
-import { defaultLocale, isValidLocale, getTranslation, type Locale } from '@/config/site/locales'
+import { defaultLocale, isValidLocale, getTranslation, supportedLocales, type Locale } from '@/config/site/locales'
+
 import ApiClient from '@/lib/api'
 import CategoryIntroduction from '@/components/category/CategoryIntroduction'
 import CategoryGifts from '@/components/category/CategoryGifts'
 import RelatedCategories from '@/components/category/RelatedCategories'
+import { generateCollectionPageJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
 
 // 游戏类型
 interface Game {
@@ -429,7 +431,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const localeTyped = locale as Locale
-  
+  const categoryUrl = localeTyped === defaultLocale
+    ? `/games/category/${slug}`
+    : `/${localeTyped}/games/category/${slug}`
+
+  const languages: Record<string, string> = {}
+  supportedLocales.forEach(l => {
+    languages[l] = l === defaultLocale ? `/games/category/${slug}` : `/${l}/games/category/${slug}`
+  })
+  languages['x-default'] = `/games/category/${slug}`
+
+  const alternates = { canonical: categoryUrl, languages }
+
   if (locale === 'en-US') {
     return {
       title: `${category.name} Games - Top Picks & Rankings - GameBox`,
@@ -441,6 +454,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         `${category.name} recommendations`,
         `best ${category.name} games`,
       ].join(','),
+      alternates,
     }
   }
 
@@ -455,10 +469,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     keywords: isTW
       ? [`${category.name}遊戲`, `${category.name}手遊`, `${category.name}推薦`, `${category.name}排行榜`, `${category.name}攻略`].join(',')
       : [`${category.name}游戏`, `${category.name}手游`, `${category.name}推荐`, `${category.name}排行榜`, `${category.name}攻略`].join(','),
+    alternates,
   }
 }
 
-// 该页使用 query 分页，但保留 Next 数据缓存能力，避免每次请求都穿透到后端
+// 按需渲染 + 数据缓存（300s），首次访问后 Worker isolate 内存中缓存完整页面
+// 注意：不能添加 generateStaticParams，否则 @opennextjs/cloudflare 会切换到
+// 需要 KV/R2 的持久化 ISR 路径，而本项目未配置 KV/R2 会导致 500
 export const dynamic = 'auto'
 export const revalidate = 300
 
@@ -494,6 +511,37 @@ export default async function GameCategoryPage({ params, searchParams }: PagePro
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateCollectionPageJsonLd({
+            name: locale === 'en-US'
+              ? `${category.name} Games`
+              : locale === 'zh-TW'
+              ? `${category.name}遊戲`
+              : `${category.name}游戏`,
+            description: category.description || category.name,
+            url: localeTyped === defaultLocale
+              ? `/games/category/${slug}`
+              : `/${localeTyped}/games/category/${slug}`,
+            items: firstPageData.games.slice(0, 30).map((game) => ({
+              name: game.name,
+              url: `/games/${game.id}`,
+              image: game.iconUrl,
+            })),
+          })),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateBreadcrumbJsonLd([
+            { name: getTranslation('home', localeTyped), url: localeTyped === defaultLocale ? '/' : `/${localeTyped}` },
+            { name: getTranslation('gameLibrary', localeTyped), url: localeTyped === defaultLocale ? '/games' : `/${localeTyped}/games` },
+            { name: category.name, url: localeTyped === defaultLocale ? `/games/category/${slug}` : `/${localeTyped}/games/category/${slug}` },
+          ])),
+        }}
+      />
       {/* 面包屑导航 */}
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">

@@ -5,10 +5,11 @@ import { ChevronRight, Newspaper, Calendar, TrendingUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import ApiClient from '@/lib/api'
-import { isValidLocale, supportedLocales, getTranslation, type Locale } from '@/config/site/locales'
+import { isValidLocale, supportedLocales, defaultLocale, getTranslation, type Locale } from '@/config/site/locales'
 import { generateListMetadata } from '@/lib/metadata'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
 import ImageWithFallback from '../ImageWithFallback'
+import { generateCollectionPageJsonLd } from '@/lib/jsonld'
 
 export async function generateStaticParams() {
   return supportedLocales.map(locale => ({ locale }))
@@ -26,8 +27,14 @@ export async function generateMetadata({
   }
 
   const locale = localeParam as Locale
+  const listPath = '/news'
+  const languages: Record<string, string> = {}
+  supportedLocales.forEach(l => {
+    languages[l] = l === defaultLocale ? listPath : `/${l}${listPath}`
+  })
+  languages['x-default'] = listPath
 
-  return generateListMetadata(locale, 'strategy', {
+  const base = await generateListMetadata(locale, 'strategy', {
     title:
       locale === 'zh-CN'
         ? '游戏资讯速报 - 版本更新·活动·行业动态'
@@ -45,13 +52,20 @@ export async function generateMetadata({
         ? '游戏资讯,手游更新,游戏活动,手游行业动态'
         : 'game news,mobile game update,game event,game industry',
   })
+  return {
+    ...base,
+    alternates: {
+      canonical: locale === defaultLocale ? listPath : `/${locale}${listPath}`,
+      languages,
+    },
+  }
 }
 
 export const dynamic = 'auto'
 export const revalidate = 180
 
 interface NewsArticle {
-  id: number
+  masterArticleId: number
   title: string
   description?: string
   coverImage?: string
@@ -75,8 +89,8 @@ async function getArticlesBySections(locale: Locale, sections: readonly string[]
 
       if (response.code === 200 && response.rows) {
         for (const article of response.rows as NewsArticle[]) {
-          if (article?.id) {
-            articleMap.set(article.id, article)
+          if (article?.masterArticleId) {
+            articleMap.set(article.masterArticleId, article)
           }
         }
       }
@@ -147,7 +161,7 @@ async function NewsArticlesSection({
   const basePath = locale === 'zh-CN' ? '' : `/${locale}`
 
   const ArticleCard = ({ article }: { article: NewsArticle }) => (
-    <Link href={`${basePath}/news/${article.id}`} className="group">
+    <Link href={`${basePath}/news/${article.masterArticleId}`} className="group">
       <Card className="h-full hover:shadow-lg transition-all hover:border-sky-500/50">
         <div className={`grid ${article.coverImage ? 'sm:grid-cols-[100px_1fr]' : ''} gap-0`}>
           {article.coverImage && (
@@ -208,6 +222,25 @@ async function NewsArticlesSection({
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateCollectionPageJsonLd({
+            name: locale === 'zh-CN' ? '游戏资讯' : locale === 'zh-TW' ? '遊戲資訊' : 'Game News',
+            description: locale === 'zh-CN'
+              ? '手游版本更新、平台活动资讯、行业动态一站速览'
+              : locale === 'zh-TW'
+              ? '手遊版本更新、平台活動資訊、行業動態一站速覽'
+              : 'Game version updates, platform events and industry news in one place.',
+            url: basePath ? `${basePath}/news` : '/news',
+            items: articles.slice(0, 30).map((article) => ({
+              name: article.title,
+              url: `${basePath}/news/${article.masterArticleId}`,
+              image: article.coverImage,
+            })),
+          })),
+        }}
+      />
       {groupedArticles.map(([groupName, items]) => (
         <div key={groupName} id={encodeURIComponent(groupName)} className="scroll-mt-20">
           <div className="flex items-center gap-3 mb-6">
@@ -219,7 +252,7 @@ async function NewsArticlesSection({
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((article: NewsArticle) => (
-              <ArticleCard key={article.id} article={article} />
+              <ArticleCard key={article.masterArticleId} article={article} />
             ))}
           </div>
         </div>

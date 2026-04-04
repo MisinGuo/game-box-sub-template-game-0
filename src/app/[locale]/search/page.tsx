@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
   const locale = localeParam as Locale
 
-  return generateListMetadata(locale, 'strategy', {
+  const base = await generateListMetadata(locale, 'strategy', {
     title:
       locale === 'zh-CN'
         ? '站内搜索 - 快速查找游戏与内容'
@@ -38,6 +38,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         ? '搜尋,遊戲搜尋,攻略搜尋,站內搜尋'
         : 'search,game search,guide search,site search',
   })
+  return {
+    ...base,
+    robots: { index: false, follow: true },
+  }
 }
 
 export const dynamic = 'auto'

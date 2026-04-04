@@ -31,7 +31,7 @@ function useDebounce<T>(value: T, delay: number = 500): T {
 }
 
 interface Article {
-  id: number
+  masterArticleId: number
   title: string
   slug?: string
   subtitle?: string
@@ -176,7 +176,7 @@ export default function SearchClient({ locale }: SearchClientProps) {
   }
 
   const resolveArticlePath = (article: Article): string => {
-    const slugOrId = article.slug || String(article.id)
+    const slugOrId = article.slug || String(article.masterArticleId)
     const section = article.sectionName || article.categoryName || ''
     const isReview = /评测|測評|review/i.test(section)
     const isTopic = /专题|專題|topic/i.test(section)
@@ -251,7 +251,7 @@ export default function SearchClient({ locale }: SearchClientProps) {
 
       const response: SearchProxyResponse = await res.json()
       const articles: Article[] = (response.data?.articles || []).filter(
-        (article: Article) => Number.isFinite(Number(article?.id)) && !!article?.title
+        (article: Article) => Number.isFinite(Number(article?.masterArticleId)) && !!article?.title
       )
       const games: Game[] = (response.data?.games || []).filter(
         (game: Game) => Number.isFinite(Number(game?.id)) && !!game?.name
@@ -260,7 +260,7 @@ export default function SearchClient({ locale }: SearchClientProps) {
       // 转换为统一的搜索结果格式
       const articleResults: SearchResult[] = articles.map(article => ({
         type: 'article' as const,
-        id: article.id,
+        id: article.masterArticleId,
         title: article.title,
         subtitle: article.subtitle,
         description: article.summary || article.description || toPlainExcerpt(article.content),
@@ -491,7 +491,7 @@ export default function SearchClient({ locale }: SearchClientProps) {
                                         >
                                           {box.logoUrl ? (
                                             <span className="flex items-center gap-1">
-                                              <img src={box.logoUrl} alt="" className="w-3.5 h-3.5 rounded-sm object-contain" />
+                                              <img src={box.logoUrl} alt={box.boxName} className="w-3.5 h-3.5 rounded-sm object-contain" />
                                               {box.boxName}
                                             </span>
                                           ) : (
@@ -502,9 +502,9 @@ export default function SearchClient({ locale }: SearchClientProps) {
                                     )}
                                   </div>
 
-                                  <h3 className="text-lg font-semibold text-white mb-1 hover:text-blue-400 transition-colors line-clamp-1">
+                                  <h2 className="text-lg font-semibold text-white mb-1 hover:text-blue-400 transition-colors line-clamp-1">
                                     {item.title}
-                                  </h3>
+                                  </h2>
 
                                   {item.subtitle && (
                                     <div className="text-sm text-slate-400 mb-1 line-clamp-1">

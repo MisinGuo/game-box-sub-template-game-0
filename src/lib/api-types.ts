@@ -48,7 +48,7 @@ export interface HomeDataResponse {
  * 文章列表项
  */
 export interface ArticleListItem {
-  id: number
+  masterArticleId: number
   title: string
   slug: string
   coverImage?: string

@@ -61,6 +61,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/api') ||
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
+    pathname === '/feed.xml' ||
     pathname.endsWith('.xsl') ||
     pathname.endsWith('.css') ||
     pathname.endsWith('.js')
@@ -84,13 +85,21 @@ export function middleware(request: NextRequest) {
       url.pathname = newPathname
       return NextResponse.redirect(url)
     }
-    return NextResponse.next()
+    // 非默认语言：从 URL 中提取 locale 并传递给 layout
+    const currentLocale = supportedLocales.find(
+      (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+    ) || defaultLocale
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-locale', currentLocale)
+    return NextResponse.next({ request: { headers: requestHeaders } })
   }
 
   // 没有语言前缀，使用 rewrite 到默认语言（URL 不变，SEO 友好）
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-locale', defaultLocale)
   const url = request.nextUrl.clone()
   url.pathname = `/${defaultLocale}${pathname}`
-  return NextResponse.rewrite(url)
+  return NextResponse.rewrite(url, { request: { headers: requestHeaders } })
 }
 
 export const config = {

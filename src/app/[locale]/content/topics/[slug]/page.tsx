@@ -3,6 +3,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ApiClient from '@/lib/api'
 import { ArticleLayout } from '@/components/content/ArticleLayout'
+import { generateArticleJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
 import { getModuleConfig } from '@/config'
 import { isValidLocale, supportedLocales, defaultLocale, type Locale } from '@/config/site/locales'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
@@ -90,6 +91,14 @@ export async function generateMetadata({
   const titleSuffix = locale === 'zh-TW' ? ' | 遊戲專題' : locale === 'en-US' ? ' | Game Topics' : ' | 游戏专题'
   const siteNameStr = locale === 'zh-TW' ? '遊戲專題' : locale === 'en-US' ? 'Game Topics' : '游戏专题'
 
+  const languages: Record<string, string> = {}
+  if (availableLocales.length > 1) {
+    availableLocales.forEach(l => {
+      languages[l] = l === defaultLocale ? `/content/topics/${slug}` : `/${l}/content/topics/${slug}`
+    })
+    languages['x-default'] = `/content/topics/${slug}`
+  }
+
   return {
     title: `${topic.title}${titleSuffix}`,
     description,
@@ -114,7 +123,10 @@ export async function generateMetadata({
       description,
       images: [imageUrl],
     },
-    alternates: { canonical: topicUrl },
+    alternates: {
+      canonical: topicUrl,
+      ...(availableLocales.length > 1 && { languages }),
+    },
   }
 }
 
@@ -138,9 +150,37 @@ export default async function TopicDetailPage({
   }
 
   const categoryHref = locale === defaultLocale ? '/content/topics' : `/${locale}/content/topics`
+  const topicUrl = locale === defaultLocale ? `/content/topics/${slug}` : `/${locale}/content/topics/${slug}`
 
   return (
-    <ArticleLayout
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateArticleJsonLd({
+            title: topic.title,
+            description: topic.description,
+            coverImage: topic.coverImage,
+            author: topic.author,
+            createTime: topic.createTime,
+            updateTime: topic.updateTime,
+            url: topicUrl,
+            tags: topic.tags,
+          })),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateBreadcrumbJsonLd([
+            { name: locale === 'zh-TW' ? '首頁' : locale === 'en-US' ? 'Home' : '首页', url: locale === defaultLocale ? '/' : `/${locale}` },
+            { name: locale === 'zh-TW' ? '內容中心' : locale === 'en-US' ? 'Content' : '内容中心', url: locale === defaultLocale ? '/content' : `/${locale}/content` },
+            { name: locale === 'zh-TW' ? '專題' : locale === 'en-US' ? 'Topics' : '专题', url: locale === defaultLocale ? '/content/topics' : `/${locale}/content/topics` },
+            { name: topic.title, url: topicUrl },
+          ])),
+        }}
+      />
+      <ArticleLayout
       config={moduleConfig}
       frontmatter={{
         title: topic.title,
@@ -156,5 +196,6 @@ export default async function TopicDetailPage({
       availableLocales={availableLocales}
       breadcrumbCategoryHref={categoryHref}
     />
+    </>
   )
 }
