@@ -126,6 +126,9 @@ async function HomeDataSections({ currentLocale }: { currentLocale: Locale }) {
     strategyCount: homeConfig.data.strategyCount,
     hotGamesCount: homeConfig.data.specialCount,
     articleCount: homeConfig.data.articleCount,
+  }).catch((error) => {
+    console.error('[HomePage] 获取首页数据失败，已降级为空数据:', error)
+    return { code: 500, msg: 'home data fallback', data: {}, rows: [] }
   })
 
   const homeData = response.data || {}
