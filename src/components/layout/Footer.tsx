@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useLocale } from '@/contexts/LocaleContext'
 
@@ -21,9 +22,7 @@ export function Footer() {
       <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
         <div>
           <Link href={getLocalePath('/')} className="flex items-center gap-2 font-bold text-xl text-white mb-4">
-            <div className="h-8 w-8 rounded bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              G
-            </div>
+            <Image src="/logo.png" alt={t('siteName')} width={32} height={32} className="rounded" />
             <span>{t('siteName')}</span>
           </Link>
           <p className="text-sm leading-relaxed">

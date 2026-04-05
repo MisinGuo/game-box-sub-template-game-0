@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { Menu, Search, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -73,21 +74,22 @@ export function Header() {
           href={getLocalizedUrl('/')}
           className="mr-8 flex items-center gap-2 font-bold text-xl text-white"
         >
-          <div className="h-8 w-8 rounded bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            G
-          </div>
+          <Image src="/logo.png" alt={t('siteName')} width={32} height={32} className="rounded" />
           <span>{t('siteName')}</span>
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+        <nav className="hidden md:flex items-center gap-1 text-sm">
           {navItems.map((item) => (
             <Link
               key={item.id}
               href={getLocalizedUrl(item.id)}
-              className={`transition-colors hover:text-white ${
-                isActive(item.id) ? 'text-white' : 'text-slate-400'
-              }`}
+              className="px-4 py-2 rounded-lg transition-all duration-200"
+              style={{
+                color: isActive(item.id) ? '#60a5fa' : '#94a3b8',
+                background: isActive(item.id) ? 'rgba(96,165,250,0.12)' : 'transparent',
+                fontWeight: isActive(item.id) ? 600 : 400,
+              }}
             >
               {item.label}
             </Link>
@@ -139,9 +141,12 @@ export function Header() {
                   <Link
                     key={item.id}
                     href={getLocalizedUrl(item.id)}
-                    className={`text-lg font-medium text-left px-4 py-2 rounded-md hover:bg-slate-900 ${
-                      isActive(item.id) ? 'text-white bg-slate-900' : 'text-slate-400'
-                    }`}
+                    className="text-lg font-medium text-left px-4 py-3 rounded-lg transition-all duration-200"
+                    style={{
+                      color: isActive(item.id) ? '#60a5fa' : '#94a3b8',
+                      background: isActive(item.id) ? 'rgba(96,165,250,0.12)' : 'transparent',
+                      fontWeight: isActive(item.id) ? 600 : 400,
+                    }}
                   >
                     {item.label}
                   </Link>
