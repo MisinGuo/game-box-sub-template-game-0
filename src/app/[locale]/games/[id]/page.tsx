@@ -329,8 +329,39 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function GameDetailPage({ params }: PageProps) {
-  const { id, locale } = await params
+function GamePageSkeleton() {
+  return (
+    <div className="min-h-screen bg-slate-950">
+      <div className="relative overflow-hidden">
+        <div className="container mx-auto max-w-6xl px-4 py-6 md:py-10">
+          <div className="flex flex-row gap-4 md:gap-8 items-start">
+            <div className="w-20 h-20 md:w-44 md:h-44 rounded-2xl bg-slate-800 animate-pulse shrink-0" />
+            <div className="flex-1 min-w-0 space-y-3">
+              <div className="flex gap-2 mb-2">
+                <div className="h-5 w-16 bg-slate-800 rounded animate-pulse" />
+              </div>
+              <div className="h-8 w-64 bg-slate-800 rounded animate-pulse" />
+              <div className="h-4 w-48 bg-slate-800 rounded animate-pulse" />
+              <div className="flex gap-3 mt-4">
+                <div className="h-10 w-36 bg-slate-800 rounded animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <section className="container mx-auto max-w-6xl px-4 py-5 md:py-8">
+        <div className="h-6 w-32 bg-slate-800 rounded animate-pulse mb-4" />
+        <div className="space-y-2">
+          <div className="h-4 w-full bg-slate-800 rounded animate-pulse" />
+          <div className="h-4 w-5/6 bg-slate-800 rounded animate-pulse" />
+          <div className="h-4 w-4/6 bg-slate-800 rounded animate-pulse" />
+        </div>
+      </section>
+    </div>
+  )
+}
+
+async function GameDetailContent({ id, locale }: { id: string; locale: string }) {
   const data = await getGameData(id, locale)
   const t = getT(gamePageTranslations, locale)
 
@@ -642,5 +673,14 @@ export default async function GameDetailPage({ params }: PageProps) {
         </section>
       </Suspense>
     </div>
+  )
+}
+
+export default async function GameDetailPage({ params }: PageProps) {
+  const { id, locale } = await params
+  return (
+    <Suspense fallback={<GamePageSkeleton />}>
+      <GameDetailContent id={id} locale={locale} />
+    </Suspense>
   )
 }

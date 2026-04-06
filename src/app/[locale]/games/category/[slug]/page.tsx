@@ -479,30 +479,52 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export const dynamic = 'auto'
 export const revalidate = 300
 
-export default async function GameCategoryPage({ params, searchParams }: PageProps) {
-  const { locale, slug } = await params
-  const { source, page } = await searchParams
-  
-  // 验证语言
-  if (!isValidLocale(locale)) {
-    notFound()
-  }
-  
-  const localeTyped = locale as Locale
-  
+function CategoryPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="border-b bg-background/95">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-12 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-4 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-4 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+          </div>
+        </div>
+      </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="h-10 w-32 bg-muted rounded animate-pulse mb-6" />
+        <div className="h-48 w-full bg-muted/50 rounded-lg animate-pulse mb-8" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="bg-muted/50 rounded-lg p-4">
+              <div className="aspect-square bg-muted rounded-lg animate-pulse mb-3" />
+              <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+async function CategoryPageContent({ locale, slug, page, source }: { locale: Locale; slug: string; page?: string; source?: string }) {
+  const localeTyped = locale
+
   // 直接使用基础分类数据，暂不走品类详情接口
   const category = await getCategoryBySlug(slug)
-  
+
   if (!category) {
     notFound()
   }
-  
+
   const currentPage = normalizePage(page)
-  
+
   // 并行获取游戏总数（不阻塞其他部分）
   const firstPageDataPromise = getCategoryGamesPage(category.id, locale, 1, CATEGORY_PAGE_SIZE)
   const firstPageData = await firstPageDataPromise
-  
+
   const displayStats = {
     gamesCount: firstPageData.total,
     guidesCount: 0,
@@ -607,3 +629,20 @@ export default async function GameCategoryPage({ params, searchParams }: PagePro
     </div>
   )
 }
+
+export default async function GameCategoryPage({ params, searchParams }: PageProps) {
+  const { locale, slug } = await params
+  const { source, page } = await searchParams
+
+  // 验证语言
+  if (!isValidLocale(locale)) {
+    notFound()
+  }
+
+  return (
+    <Suspense fallback={<CategoryPageSkeleton />}>
+      <CategoryPageContent locale={locale as Locale} slug={slug} page={page} source={source} />
+    </Suspense>
+  )
+}
+
