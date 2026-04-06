@@ -1,4 +1,4 @@
-import { cache } from 'react'
+import { cache, Suspense } from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ApiClient from '@/lib/api'
@@ -146,6 +146,34 @@ export async function generateMetadata({
   }
 }
 
+function ArticleContentSkeleton() {
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="border-b py-3">
+        <div className="container mx-auto px-4">
+          <div className="h-4 w-64 bg-muted rounded animate-pulse" />
+        </div>
+      </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex gap-2 mb-4">
+          <div className="h-6 w-16 bg-muted rounded-full animate-pulse" />
+        </div>
+        <div className="h-9 w-3/4 bg-muted rounded animate-pulse mb-3" />
+        <div className="h-5 w-1/3 bg-muted rounded animate-pulse mb-6" />
+        <div className="h-px bg-muted mb-6" />
+        <div className="space-y-3">
+          <div className="h-4 w-full bg-muted rounded animate-pulse" />
+          <div className="h-4 w-5/6 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-full bg-muted rounded animate-pulse" />
+          <div className="h-4 w-4/5 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-full bg-muted rounded animate-pulse" />
+          <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default async function GuideDetailPage({ 
   params 
 }: { 
@@ -158,8 +186,19 @@ export default async function GuideDetailPage({
   }
   
   const locale = localeParam as Locale
-  const guide = await getGuideDetail(slug, locale)
-  const availableLocales = await getAvailableGuideLocales(slug)
+
+  return (
+    <Suspense fallback={<ArticleContentSkeleton />}>
+      <GuideArticleContent slug={slug} locale={locale} />
+    </Suspense>
+  )
+}
+
+async function GuideArticleContent({ slug, locale }: { slug: string; locale: Locale }) {
+  const [guide, availableLocales] = await Promise.all([
+    getGuideDetail(slug, locale),
+    getAvailableGuideLocales(slug),
+  ])
 
   if (!guide) {
     notFound()
@@ -197,21 +236,21 @@ export default async function GuideDetailPage({
         }}
       />
       <ArticleLayout
-      config={moduleConfig}
-      frontmatter={{
-        title: guide.title,
-        description: guide.description,
-        date: guide.createTime,
-        author: guide.author,
-        tags: guide.tags,
-        category: guide.categoryName || (locale === 'zh-TW' ? '攻略' : locale === 'en-US' ? 'Guide' : '攻略'),
-      }}
-      content={guide.content}
-      readingTime={Math.ceil(guide.content.length / 500)}
-      toc={[]}
-      availableLocales={availableLocales}
-      breadcrumbCategoryHref={categoryHref}
-    />
+        config={moduleConfig}
+        frontmatter={{
+          title: guide.title,
+          description: guide.description,
+          date: guide.createTime,
+          author: guide.author,
+          tags: guide.tags,
+          category: guide.categoryName || (locale === 'zh-TW' ? '攻略' : locale === 'en-US' ? 'Guide' : '攻略'),
+        }}
+        content={guide.content}
+        readingTime={Math.ceil(guide.content.length / 500)}
+        toc={[]}
+        availableLocales={availableLocales}
+        breadcrumbCategoryHref={categoryHref}
+      />
     </>
   )
 }

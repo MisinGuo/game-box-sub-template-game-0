@@ -152,7 +152,25 @@ export default async function NewsDetailPage({
   }
 
   const locale = localeParam as Locale
-  const news = await getNewsDetail(slug, locale)
+
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-4xl mx-auto">
+          <ArticleContentSkeleton />
+        </div>
+      </div>
+    }>
+      <NewsArticleContent id={slug} locale={locale} />
+    </Suspense>
+  )
+}
+
+async function NewsArticleContent({ id, locale }: { id: string; locale: Locale }) {
+  const [news, availableLocales] = await Promise.all([
+    getNewsDetail(id, locale),
+    getAvailableNewsLocales(id),
+  ])
 
   if (!news) {
     notFound()
@@ -161,8 +179,7 @@ export default async function NewsDetailPage({
   const categoryHref = `${locale === defaultLocale ? '/news' : `/${locale}/news`}#${encodeURIComponent(
     news.categoryName || (locale === 'en-US' ? 'News' : locale === 'zh-TW' ? '資訊' : '资讯')
   )}`
-
-  const newsUrl = locale === defaultLocale ? `/news/${slug}` : `/${locale}/news/${slug}`
+  const newsUrl = locale === defaultLocale ? `/news/${id}` : `/${locale}/news/${id}`
 
   return (
     <>
@@ -191,57 +208,22 @@ export default async function NewsDetailPage({
           ])),
         }}
       />
-      <Suspense fallback={
-        <div className="min-h-screen bg-background p-4">
-          <div className="max-w-4xl mx-auto">
-            <ArticleContentSkeleton />
-          </div>
-        </div>
-      }>
-        <NewsArticleContent
-        id={slug}
-        news={news}
-        categoryHref={categoryHref}
-        locale={locale}
-        moduleConfig={moduleConfig}
+      <ArticleLayout
+        config={moduleConfig}
+        frontmatter={{
+          title: news.title,
+          description: news.description,
+          date: news.createTime,
+          author: news.author,
+          tags: news.tags,
+          category: news.categoryName || (locale === 'en-US' ? 'News' : locale === 'zh-TW' ? '資訊' : '资讯'),
+        }}
+        content={news.content}
+        readingTime={Math.ceil(news.content.length / 500)}
+        toc={[]}
+        availableLocales={availableLocales}
+        breadcrumbCategoryHref={categoryHref}
       />
-    </Suspense>
     </>
-  )
-}
-
-// 异步子组件：文章内容
-async function NewsArticleContent({
-  id,
-  news,
-  categoryHref,
-  locale,
-  moduleConfig,
-}: {
-  id: string
-  news: NewsDetail
-  categoryHref: string
-  locale: Locale
-  moduleConfig: ReturnType<typeof getModuleConfig>
-}) {
-  const availableLocales = await getAvailableNewsLocales(id)
-
-  return (
-    <ArticleLayout
-      config={moduleConfig}
-      frontmatter={{
-        title: news.title,
-        description: news.description,
-        date: news.createTime,
-        author: news.author,
-        tags: news.tags,
-        category: news.categoryName || (locale === 'en-US' ? 'News' : locale === 'zh-TW' ? '資訊' : '资讯'),
-      }}
-      content={news.content}
-      readingTime={Math.ceil(news.content.length / 500)}
-      toc={[]}
-      availableLocales={availableLocales}
-      breadcrumbCategoryHref={categoryHref}
-    />
   )
 }
