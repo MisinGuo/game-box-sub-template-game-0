@@ -64,6 +64,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: siteDescription,
     keywords: siteKeywords,
+    verification: siteConfig.verification,
     openGraph: {
       type: 'website',
       locale: ogLocaleMap[locale] || 'zh_CN',

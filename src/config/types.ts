@@ -191,6 +191,13 @@ export interface SiteConfig {
   }
   /** SEO关键词 */
   keywords?: string[]
+  /** 站点验证配置 */
+  verification?: {
+    google?: string
+    yandex?: string
+    yahoo?: string
+    other?: Record<string, string>
+  }
   /** Open Graph图片 */
   ogImage: string
   /** 默认语言 */

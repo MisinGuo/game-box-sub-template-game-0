@@ -63,6 +63,13 @@ export const siteConfig: SiteConfig = {
     '破解游戏',
     '游戏攻略',
   ],
+
+  /** 站点验证配置 */
+  verification: {
+    other: {
+      'baidu-site-verification': 'codeva-rDKX3wvhke',
+    },
+  },
   
   /** 默认语言 */
   defaultLocale: 'zh-CN',
