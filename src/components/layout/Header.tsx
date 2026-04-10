@@ -4,14 +4,16 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { Menu, Search, ChevronDown } from 'lucide-react'
+import { Menu, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useLocale } from '@/contexts/LocaleContext'
-import { defaultLocale } from '@/config/site/locales'
+import { defaultLocale, supportedLocales } from '@/config/site/locales'
+import { siteConfig } from '@/config'
+import { getLocalizedSiteName, siteConfigFile } from '@/lib/site-config'
 
 export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -20,6 +22,8 @@ export function Header() {
   const router = useRouter()
   const t = useTranslation()
   const { locale } = useLocale()
+  const siteName = getLocalizedSiteName(locale)
+  const searchEnabled = siteConfig.features?.search !== false
 
   // 根据当前语言生成URL
   const getLocalizedUrl = (path: string) => {
@@ -29,13 +33,12 @@ export function Header() {
     return `/${locale}${path}`
   }
 
-  // 使用多语言配置的导航项
-  const navItems = [
-    { id: '/games', label: t('games') },
-    { id: '/boxes', label: t('boxes') },
-    { id: '/content', label: t('content') },
-    { id: '/news', label: t('news') },
-  ]
+  const navItems = siteConfigFile.navigation.header
+    .filter((item) => item.enabled)
+    .map((item) => ({
+      id: item.path,
+      label: t(item.i18nKey) || item.label,
+    }))
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,14 +57,19 @@ export function Header() {
   }
 
   const isActive = (path: string) => {
-    // 移除语言前缀来比较路径
     let cleanPathname = pathname
-    if (pathname.startsWith('/zh-TW/')) {
-      cleanPathname = pathname.slice(6)
-    } else if (pathname.startsWith('/en-US/')) {
-      cleanPathname = pathname.slice(7)
+
+    for (const configuredLocale of supportedLocales) {
+      if (configuredLocale === defaultLocale) {
+        continue
+      }
+
+      if (pathname.startsWith(`/${configuredLocale}/`) || pathname === `/${configuredLocale}`) {
+        cleanPathname = pathname.slice(`/${configuredLocale}`.length) || '/'
+        break
+      }
     }
-    
+
     if (path === '/') return cleanPathname === '/' || cleanPathname === ''
     return cleanPathname.startsWith(path)
   }
@@ -74,8 +82,8 @@ export function Header() {
           href={getLocalizedUrl('/')}
           className="mr-8 flex items-center gap-2 font-bold text-xl text-white"
         >
-          <Image src="/logo.png" alt={t('siteName')} width={32} height={32} className="rounded" />
-          <span>{t('siteName')}</span>
+          <Image src={siteConfig.logo} alt={siteName} width={32} height={32} className="rounded" />
+          <span>{siteName}</span>
         </Link>
 
         {/* Desktop Nav */}
@@ -98,28 +106,30 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="ml-auto flex items-center gap-2">
-          {/* Search - Desktop */}
-          <form onSubmit={handleSearch} className="hidden md:flex relative w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-            <Input
-              type="search"
-              placeholder={t('search') + '...'}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="pl-9 bg-slate-900 border-slate-800 text-slate-100 focus-visible:ring-blue-500"
-            />
-          </form>
+          {searchEnabled && (
+            <form onSubmit={handleSearch} className="hidden md:flex relative w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+              <Input
+                type="search"
+                placeholder={t('searchPlaceholder') || `${t('search')}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="pl-9 bg-slate-900 border-slate-800 text-slate-100 focus-visible:ring-blue-500"
+              />
+            </form>
+          )}
 
-          {/* Search - Mobile Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden text-slate-400 hover:text-white hover:bg-slate-800"
-            onClick={() => setIsSearchOpen(!isSearchOpen)}
-          >
-            <Search className="h-5 w-5" />
-          </Button>
+          {searchEnabled && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden text-slate-400 hover:text-white hover:bg-slate-800"
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+          )}
 
           {/* Language Switcher */}
           <LanguageSwitcher />
@@ -158,13 +168,13 @@ export function Header() {
       </div>
 
       {/* Mobile Search Bar */}
-      {isSearchOpen && (
+      {searchEnabled && isSearchOpen && (
         <div className="md:hidden border-t border-slate-800 p-4 bg-slate-950">
           <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
             <Input
               type="search"
-              placeholder={t('search') + '...'}
+              placeholder={t('searchPlaceholder') || `${t('search')}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}

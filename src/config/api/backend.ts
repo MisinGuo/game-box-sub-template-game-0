@@ -37,6 +37,7 @@ export interface ApiEndpoints {
   // 文章相关
   articles: string         // 文章列表
   articleDetail: string    // 文章详情
+  siteConfig: string       // 站点配置
   // 首页数据
   home: string            // 首页数据
   // 游戏相关
@@ -87,6 +88,7 @@ export const backendConfig: BackendConfig = {
 export const apiEndpoints: ApiEndpoints = {
   articles: '/api/public/articles',
   articleDetail: '/api/public/articles',
+  siteConfig: '/api/public/site-config',
   home: '/api/public/home',
   games: '/api/public/games',
   gameDetail: '/api/public/games',

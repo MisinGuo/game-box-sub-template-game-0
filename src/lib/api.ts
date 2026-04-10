@@ -379,7 +379,7 @@ export class ApiClient {
 
   /** 获取网站配置信息（所有页面共用，支持CDN缓存） */
   static async getSiteConfig(params: { locale?: string } = {}) {
-    return request('/api/public/site-config', {
+    return request(apiEndpoints.siteConfig, {
       method: 'GET',
       params: prepareParams({
         locale: getCurrentLocale(params.locale as any),

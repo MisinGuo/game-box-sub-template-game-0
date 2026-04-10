@@ -11,6 +11,7 @@ import { NavigationTracker } from '@/components/common/NavigationTracker'
 import { WebVitals } from '@/components/common/WebVitals'
 import { siteConfig } from '@/config'
 import { backendConfig } from '@/config/api/backend'
+import { buildThemeCSSVars, siteTheme } from '@/lib/site-config'
 import ApiClient from '@/lib/api'
 
 const notoSansSC = Noto_Sans_SC({
@@ -82,9 +83,10 @@ export default async function RootLayout({
   const headersList = await headers()
   const locale = headersList.get('x-locale') || 'zh-CN'
   const apiOrigin = new URL(backendConfig.baseURL).origin
+  const themeCSSVars = buildThemeCSSVars(siteTheme)
 
   return (
-    <html lang={locale}>
+    <html lang={locale} style={themeCSSVars}>
       <head>
         <link rel="preconnect" href={apiOrigin} />
         <link rel="dns-prefetch" href={apiOrigin} />
