@@ -29,27 +29,27 @@ export const sitemapConfig: SitemapConfig = {
     },
     // 盒子详情和下载页
     boxes: {
-      changefreq: 'weekly',
+      changefreq: 'daily',
       priority: 0.8,
     },
     // 攻略文章（guides）
     guides: {
-      changefreq: 'weekly',
+      changefreq: 'daily',
       priority: 0.7,
     },
     // 评测文章（reviews）
     reviews: {
-      changefreq: 'weekly',
+      changefreq: 'daily',
       priority: 0.7,
     },
     // 专题文章（topics）
     topics: {
-      changefreq: 'weekly',
+      changefreq: 'daily',
       priority: 0.7,
     },
     // 资讯文章（news）
     news: {
-      changefreq: 'weekly',
+      changefreq: 'daily',
       priority: 0.7,
     },
   },
