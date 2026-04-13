@@ -33,6 +33,8 @@ export const locales: Record<Locale, LocaleConfig> = {
       boxes: '盒子大全',
       games: '游戏库',
       gifts: '礼包',
+      discount: '0.1折专区',
+      rank: '排行榜',
       // discounts: '福利中心',
       search: '搜索',
       
@@ -207,6 +209,8 @@ export const locales: Record<Locale, LocaleConfig> = {
       boxes: '盒子大全',
       games: '遊戲庫',
       gifts: '禮包',
+      discount: '0.1折專區',
+      rank: '排行榜',
       // discounts: '福利中心',
       search: '搜索',
       
@@ -380,6 +384,8 @@ export const locales: Record<Locale, LocaleConfig> = {
       boxes: 'Game Boxes',
       games: 'Games',
       gifts: 'Gifts',
+      discount: 'Discount Zone',
+      rank: 'Rankings',
       // discounts: 'Rewards Center',
       search: 'Search',
       

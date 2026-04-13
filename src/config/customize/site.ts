@@ -75,6 +75,8 @@ const siteConfigData: SiteConfigFile = {
       { path: '/', i18nKey: 'home', label: '首页', enabled: true, inSitemap: true },
       { path: '/games', i18nKey: 'games', label: '游戏库', enabled: true, inSitemap: true },
       { path: '/boxes', i18nKey: 'boxes', label: '盒子大全', enabled: true, inSitemap: true },
+      { path: '/01zhe', i18nKey: 'discount', label: '0.1折专区', enabled: true, inSitemap: true },
+      { path: '/rank', i18nKey: 'rank', label: '排行榜', enabled: true, inSitemap: true },
       { path: '/content', i18nKey: 'content', label: '内容中心', enabled: true, inSitemap: true },
       { path: '/news', i18nKey: 'news', label: '资讯', enabled: true, inSitemap: true },
     ],
