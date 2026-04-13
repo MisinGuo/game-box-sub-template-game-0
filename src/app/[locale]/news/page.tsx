@@ -307,14 +307,14 @@ export default async function NewsPage({
               </span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              {locale === 'zh-CN' ? '资讯速报' : locale === 'zh-TW' ? '資訊速報' : 'Game News'}
+              {locale === 'zh-CN' ? '游戏资讯' : locale === 'zh-TW' ? '遂戲資訊' : 'Game News'}
             </h1>
             <p className="text-lg text-muted-foreground">
               {locale === 'zh-CN'
-                ? '版本更新 · 活动资讯 · 行业动态 — 平台与游戏的最新动向，一站速览'
+                ? '手游最新动态 · 版本更新 · 活动资讯 · 盒子平台动态，实时掘掉你关心的一切'
                 : locale === 'zh-TW'
-                ? '版本更新 · 活動資訊 · 行業動態 — 平台與遊戲的最新動向，一站速覽'
-                : 'Version updates, events and industry news — all in one place'}
+                ? '手游最新动態 · 版本更新 · 活动資訊 · 盒子平台动態，即時掘除你關心的一切'
+                : 'Mobile game news · version updates · events · platform updates — everything you need in one place'}
             </p>
           </div>
         </div>

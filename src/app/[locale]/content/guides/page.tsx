@@ -221,14 +221,14 @@ export default async function GuidesPage({
               </span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              {locale === 'zh-CN' ? '攻略' : locale === 'zh-TW' ? '攻略' : 'Guides'}
+              {locale === 'zh-CN' ? '盒子攻略 · 礼包教程' : locale === 'zh-TW' ? '盒子攻略 · 禮包教程' : 'Box Guides & Gift Pack Tutorials'}
             </h1>
             <p className="text-lg text-muted-foreground">
               {locale === 'zh-CN'
-                ? '选对盒子省一半，礼包一分钱不花 — 数据说话，AI 整理'
+                ? '人工精品攻略，收录：盒子选购实测、礼包领取全教程、首充续充省錢方案，每篇附真实花费数据'
                 : locale === 'zh-TW'
-                ? '選對盒子省一半，禮包一分錢不花 — 數據說話，AI 整理'
-                : 'Pick the right box, claim every free gift — data-driven, AI-curated'}
+                ? '人工精品攻略，收錄：盒子選購實測、禮包領取全教程、首充續充省錢方案，每篇附真實花費數據'
+                : 'Expert guides — box buying tests, gift pack tutorials, recharge saving plans with real cost data'}
             </p>
             {groupedArticles.length > 0 && (
               <div className="flex flex-wrap items-center justify-center gap-2 pt-2">

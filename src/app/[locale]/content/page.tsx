@@ -34,8 +34,8 @@ export async function generateMetadata({
   languages['x-default'] = listPath
 
   const base = await generateListMetadata(locale, 'strategy', {
-    title: locale === 'zh-CN' ? '内容中心 - 盒子攻略·游戏评测·省錢专题' : locale === 'zh-TW' ? '內容中心 - 盒子攻略·遲戲評測·省錢專題' : 'Content Center - Box Guides, Reviews & Topics',
-    description: locale === 'zh-CN' ? '盒子选购指南、礼包领取攻略、游戏横评、省錢专题 - AI全程维护' : locale === 'zh-TW' ? '盒子選購指南、礼包領取攻略、遲戲横評、省錢專題 - AI全程维護' : 'Box guides, gift pack tips, game reviews and saving topics',
+    title: locale === 'zh-CN' ? '内容中心 - 盒子攻略·游戏横评·省钱专题' : locale === 'zh-TW' ? '內容中心 - 盒子攻略·遊戲橫評·省錢專題' : 'Content Center - Box Guides, Reviews & Topics',
+    description: locale === 'zh-CN' ? '人工精品盒子攻略、游戏横评，AI持续更新资讯专题，助你省钱选对盒子' : locale === 'zh-TW' ? '人工精品盒子攻略、遊戲橫評，AI持續更新資訊專題，助你省錢選對盒子' : 'Expert box guides & game reviews, plus AI-curated news topics to help you save money',
     keywords: '游戏盒子攻略,礼包领取,游戏横评,手游省錢',
   })
   return {
@@ -68,13 +68,13 @@ export default async function ContentCenterPage({
       home: { 'zh-CN': '首页', 'zh-TW': '首頁', 'en-US': 'Home' },
       content: { 'zh-CN': '内容中心', 'zh-TW': '內容中心', 'en-US': 'Content Center' },
       heroTitle: { 'zh-CN': '内容中心', 'zh-TW': '內容中心', 'en-US': 'Content Center' },
-      heroDesc: { 'zh-CN': '盒子攻略 · 游戏评测 · 省钱专题 — AI 全程维护，数据实时更新', 'zh-TW': '盒子攻略 · 遊戲評測 · 省錢專題 — AI 全程維護，數據實時更新', 'en-US': 'Box Guides · Game Reviews · Saving Topics — AI-powered, data-driven' },
+      heroDesc: { 'zh-CN': '人工精品攻略 · 深度横评 · 热门专题 — 真实数据，覆盖盒子省钱全策略', 'zh-TW': '人工精品攻略 · 深度橫評 · 熱門專題 — 真實數據，覆蓋盒子省錢全策略', 'en-US': 'Expert guides · Deep reviews · Hot topics — real data, full saving strategy' },
       guidesTitle: { 'zh-CN': '攻略', 'zh-TW': '攻略', 'en-US': 'Guides' },
-      guidesDesc: { 'zh-CN': '盒子怎么选、礼包怎么领，数据说话', 'zh-TW': '盒子怎麼選、禮包怎麼領，數據說話', 'en-US': 'Which box to pick & how to claim gift packs' },
+      guidesDesc: { 'zh-CN': '盒子选购实测 · 礼包领取教程 · 首充续充省錢方案，人工精品撰写，每篇含真实花费数据', 'zh-TW': '盒子選購實測 · 禮包領取教程 · 首充續充省錢方案，人工精品撰寫，每篇含真實花費數據', 'en-US': 'Box buying tests · gift pack tutorials · recharge saving plans — expert-written, with real spending data' },
       reviewsTitle: { 'zh-CN': '评测', 'zh-TW': '評測', 'en-US': 'Reviews' },
-      reviewsDesc: { 'zh-CN': '游戏横评 + 盒子折扣横评，AI 出表格你做决定', 'zh-TW': '遊戲橫評 + 盒子折扣橫評，AI 出表格你做決定', 'en-US': 'Game & platform comparisons — AI builds the table, you decide' },
+      reviewsDesc: { 'zh-CN': '同品类手游正面对比 · 多平台盒子折扣横评，人工实测，帮你一眼选出最划算的', 'zh-TW': '同品類手游正面對比 · 多平台盒子折扣橫評，人工實測，幫你一眼選出最划算的', 'en-US': 'Same-genre game comparisons · multi-platform box discount tests — human-tested, find the best value fast' },
       topicsTitle: { 'zh-CN': '专题', 'zh-TW': '專題', 'en-US': 'Topics' },
-      topicsDesc: { 'zh-CN': '排行榜 · 省钱指南 · 礼包特辑 — 系统自动维护', 'zh-TW': '排行榜 · 省錢指南 · 禮包特輯 — 系統自動維護', 'en-US': 'Rankings · Saving Guide · Gift Specials — auto-updated' },
+      topicsDesc: { 'zh-CN': 'AI定期更新：0.1折游戏排行榜 · 月度礼包大全 · 品类精选推荐，覆盖周期性长尾搜索词', 'zh-TW': 'AI定期更新：0.1折遊戲排行榜 · 月度禮包大全 · 品類精選推試，覆蓋週期性長尾搜索詞', 'en-US': 'AI-maintained: 0.1x game rankings · monthly gift packs · category picks — covers periodic long-tail searches' },
       viewAll: { 'zh-CN': '查看全部', 'zh-TW': '查看全部', 'en-US': 'View All' },
     }
     return translations[key]?.[locale] || key
@@ -153,7 +153,7 @@ export default async function ContentCenterPage({
         <div className="container py-16">
           <div className="max-w-3xl mx-auto text-center space-y-4">
             <Badge variant="secondary" className="text-sm">
-              {locale === 'zh-CN' ? 'AI 全程维护' : locale === 'zh-TW' ? 'AI 全程維護' : 'AI-powered'}
+              {locale === 'zh-CN' ? '精品内容中心' : locale === 'zh-TW' ? '精品內容中心' : 'Quality Content Hub'}
             </Badge>
             <h1 className="text-5xl font-bold tracking-tight">{t('heroTitle')}</h1>
             <p className="text-xl text-muted-foreground">{t('heroDesc')}</p>

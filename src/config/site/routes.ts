@@ -90,6 +90,20 @@ export const routes: RouteConfig[] = [
     navOrder: 5,
   },
   {
+    path: '/01zhe',
+    title: '0.1折专区',
+    description: '0.1折手游汇总，超值折扣尽在其中',
+    enabled: true,
+    showInNav: false,
+  },
+  {
+    path: '/rank',
+    title: '排行榜',
+    description: '热门游戏下载排行榜',
+    enabled: true,
+    showInNav: false,
+  },
+  {
     path: '/search',
     title: '搜索',
     description: '搜索游戏、盒子和内容',

@@ -231,14 +231,14 @@ export default async function ReviewsPage({
               <span className="font-semibold text-sm">{articles.length} {locale === 'en-US' ? 'Reviews' : locale === 'zh-TW' ? '篇橫評' : '篇横评'}</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              {locale === 'zh-CN' ? '评测' : locale === 'zh-TW' ? '評測' : 'Reviews'}
+              {locale === 'zh-CN' ? '游戏横评 · 盒子对比' : locale === 'zh-TW' ? '遊戲橫評 · 盒子對比' : 'Game & Box Comparisons'}
             </h1>
             <p className="text-lg text-muted-foreground">
               {locale === 'zh-CN'
-                ? '数据横评，让选择有据可依 — 游戏好不好、盒子值不值，数字说话'
+                ? '人工实测横评，收录：同品类手游正面对比、多平台盒子折扣横评，帮你一眼选出最划算的'
                 : locale === 'zh-TW'
-                ? '數據橫評，讓選擇有據可依 — 遊戲好不好、盒子值不值，數字說話'
-                : 'Data-driven comparisons — is the game worth it? Is the box a good deal?'}
+                ? '人工實測橫評，收錄：同品類手游正面對比、多平台盒子折扣橫評，幫你一眼選出最划算的'
+                : 'Human-tested comparisons — same-genre game reviews and multi-platform box discount tests'}
             </p>
             {groupedArticles.length > 0 && (
               <div className="flex flex-wrap items-center justify-center gap-2 pt-2">

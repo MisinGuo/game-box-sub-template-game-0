@@ -234,14 +234,14 @@ export default async function TopicsPage({
               <span className="font-semibold text-sm">{articles.length} {locale === 'en-US' ? 'Topics' : locale === 'zh-TW' ? '個專題' : '个专题'}</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              {locale === 'zh-CN' ? '专题' : locale === 'zh-TW' ? '專題' : 'Topics'}
+              {locale === 'zh-CN' ? '游戏专题' : locale === 'zh-TW' ? '遊戲專題' : 'Game Topics'}
             </h1>
             <p className="text-lg text-muted-foreground">
               {locale === 'zh-CN'
-                ? '系统自动维护，数据实时更新 — 排行榜、省钱、礼包、品类，一站全览'
+                ? '0.1折游戏排行榜 · 礼包大全 · 品类精选推荐，持续更新不错过'
                 : locale === 'zh-TW'
-                ? '系統自動維護，數據實時更新 — 排行榜、省錢、禮包、品類，一站全覽'
-                : 'Auto-maintained, always up to date — rankings, saving, gifts, and more'}
+                ? '0.1折遊戲排行榜 · 禮包大全 · 品類精選推試，持續更新不错過'
+                : '0.1x game rankings · gift pack collections · category picks — updated regularly'}
             </p>
             {groupedArticles.length > 0 && (
               <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
