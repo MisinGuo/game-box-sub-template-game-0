@@ -3,69 +3,87 @@ layout: home
 hero:
   name: 游戏盒子推广站
   text: 前端项目文档
-  tagline: Next.js + Cloudflare Workers 边缘部署
+  tagline: 主站（Next-web）+ 子站（Next-web-sub）双站技术文档
   actions:
     - theme: brand
-      text: 快速配置
+      text: 页面路由说明
+      link: /页面路由说明
+    - theme: alt
+      text: 配置指南
       link: /配置指南
     - theme: alt
       text: 部署教程
       link: /部署教程
-    - theme: alt
-      text: API 文档
-      link: /API接口文档
 
 features:
   - icon: 🚀
     title: 边缘计算部署
-    details: 部署于 Cloudflare Workers/Pages，全球 CDN 加速，毫秒级响应
+    details: 两站均部署于 Cloudflare Workers，全球 CDN 加速，毫秒级响应
   - icon: ⚡
-    title: Next.js 14 驱动
-    details: 使用最新的 App Router，支持 SSG/ISR/SSR 混合渲染，SEO 友好
-  - icon: 🌐
-    title: 多语言支持
-    details: 内置简体中文、繁体中文、英文三语言，SEO 友好的 URL 结构
+    title: Next.js App Router
+    details: SSG/ISR/动态渲染混合，SEO 与性能兼顾；主站支持三语言，子站双语言
   - icon: 🎮
-    title: 游戏内容聚合
-    details: 游戏库、盒子大全、攻略指南、资讯中心完整内容体系
+    title: 双站架构
+    details: 主站（5awyx.com）盒子折扣聚合 + 子站（kapai-web）卡牌垂直攻略，流量互导
+  - icon: 📝
+    title: 内容驱动 SEO
+    details: 资讯/攻略/评测多内容类型，tag 聚合页覆盖长尾关键词，内链网络深度互联
   - icon: 🔧
     title: TypeScript 全栈
-    details: 完整的 TypeScript 类型支持，代码提示完善，开发体验优秀
+    details: 完整类型支持；统一 API 客户端；配置驱动，无需改代码即可调整页面文案
   - icon: 📊
-    title: SEO 优化
-    details: 自动生成多语言 Sitemap，hreflang 标签，边缘缓存极速加载
+    title: 多语言 Sitemap
+    details: 自动生成 hreflang 多语言 Sitemap，边缘缓存，搜索引擎优先收录
 ---
 
-## 快速开始
+## 站点概览
 
-### 安装依赖
+| 项目 | 主站 | 子站 |
+|---|---|---|
+| **项目路径** | `Next-web/` | `Next-web-sub/` |
+| **域名** | https://www.5awyx.com | https://kapai-web.94kj.cn |
+| **后台 SITE_ID** | `1` | `8` |
+| **定位** | 游戏盒子折扣聚合站 | 卡牌手游垂直攻略站 |
+| **转化动作** | 点击盒子推广链接（CPS/CPA） | 跳转主站盒子页 |
+| **多语言** | zh-CN / zh-TW / en | zh-CN / zh-TW |
+
+## 快速开发
 
 ```bash
+# 主站
+cd Next-web
 pnpm install
+pnpm dev          # http://localhost:3000
+
+# 子站
+cd Next-web-sub
+pnpm install
+pnpm dev          # http://localhost:3001（或下一个可用端口）
 ```
 
-### 本地开发
+**环境变量**（两站各自的 `.env.local`）：
 
-```bash
-pnpm dev
+```env
+# 主站
+NEXT_PUBLIC_API_URL=http://localhost:8080
+NEXT_PUBLIC_SITE_ID=1
+
+# 子站
+NEXT_PUBLIC_API_URL=http://localhost:8080
+NEXT_PUBLIC_SITE_ID=8
 ```
 
-访问 http://localhost:3000
+## 文档导航
 
-### 构建部署（Cloudflare Workers）
-
-```bash
-pnpm deploy:cfworkers
-```
-
-## 项目特点
-
-本项目是一个基于 Next.js 14 构建的游戏盒子聚合推广网站前端，支持多语言，通过后端 API 动态获取游戏、盒子、攻略等内容。
-
-- ✅ **SEO 优化**：多语言 Sitemap + 动态 meta 标签
-- ✅ **边缘部署**：Cloudflare Workers 全球边缘网络
-- ✅ **响应式设计**：完美支持 PC 和移动端
-- ✅ **多语言**：zh-CN / zh-TW / en-US 三语言完整支持
+| 文档 | 说明 |
+|------|------|
+| [页面路由说明](./页面路由说明.md) | 主站+子站所有页面路由、功能、SEO要求、内链规范 |
+| [开发指南](./开发指南.md) | 项目结构、开发规范、组件开发 |
+| [配置指南](./配置指南.md) | 环境变量、站点配置、多语言配置 |
+| [数据展示指南](./文章数据展示指南.md) | API 调用、数据流、内容渲染 |
+| [多语言路由架构](./多语言路由架构.md) | i18n 路由设计、hreflang、语言切换 |
+| [部署教程](./部署教程.md) | Cloudflare Workers/Pages 部署完整步骤 |
+| [API 文档](./API接口文档.md) | 后端 API 接口说明 |
 
 ## 技术栈
 
@@ -73,61 +91,3 @@ pnpm deploy:cfworkers
 - **UI**：React 18 + Tailwind CSS + shadcn/ui
 - **部署**：Cloudflare Workers (OpenNext)
 - **语言**：TypeScript
-
-## 文档导航
-
-| 文档 | 说明 |
-|------|------|
-| [开发指南](./开发指南.md) | 项目结构、开发规范、组件开发 |
-| [配置指南](./配置指南.md) | 环境变量、站点配置、多语言配置 |
-| [部署教程](./部署教程.md) | Cloudflare Pages/Workers 部署详细步骤 |
-| [API 文档](./API接口文档.md) | 后端 API 接口说明 |
-
-
-## 快速开始
-
-### 安装依赖
-
-```bash
-pnpm install
-```
-
-### 本地开发
-
-```bash
-pnpm dev
-```
-
-访问 http://localhost:3000
-
-### 构建部署
-
-```bash
-pnpm build
-```
-
-## 项目特点
-
-本项目是一个基于 Next.js 14 构建的游戏盒子聚合推广网站前端，通过 AI 生成的高质量游戏内容获取搜索引擎流量。
-
-- ✅ **SEO 优化**：静态生成确保搜索引擎完整抓取
-- ✅ **边缘部署**：Cloudflare 全球边缘网络
-- ✅ **响应式设计**：完美支持 PC 和移动端
-- ✅ **内容丰富**：游戏攻略、破解版、资讯等多类型内容
-
-## 技术栈
-
-- **框架**：Next.js 14 (App Router)
-- **UI**：React 18 + Tailwind CSS + shadcn/ui
-- **内容**：Markdown + gray-matter
-- **部署**：Cloudflare Pages/Workers
-- **语言**：TypeScript
-
-## 文档导航
-
-| 文档 | 说明 |
-|------|------|
-| [项目概述](./README.md) | 项目简介、快速开始、项目结构 |
-| [开发指南](./开发指南.md) | 开发规范、组件开发、性能优化 |
-| [部署教程](./部署教程.md) | Cloudflare Pages/Workers 部署详细步骤 |
-| [API 文档](./API接口文档.md) | 后端 API 接口说明 |

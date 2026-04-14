@@ -3,7 +3,7 @@ import { mermaidPlugin } from './plugins/mermaid'
 
 export default defineConfig({
   title: '游戏盒子推广站',
-  description: '游戏盒子推广站前端项目文档 - Next.js + Cloudflare Workers',
+  description: '主站 + 子站前端项目文档 - Next.js + Cloudflare Workers',
   lang: 'zh-CN',
   base: '/',
   
@@ -12,6 +12,7 @@ export default defineConfig({
     
     nav: [
       { text: '首页', link: '/' },
+      { text: '页面路由', link: '/页面路由说明' },
       { text: '开发指南', link: '/开发指南' },
       { text: '部署教程', link: '/部署教程' },
       { text: 'API文档', link: '/API接口文档' },
@@ -19,9 +20,10 @@ export default defineConfig({
     
     sidebar: [
       {
-        text: '开始',
+        text: '概览',
         items: [
           { text: '项目概述', link: '/index' },
+          { text: '页面路由说明', link: '/页面路由说明' },
         ]
       },
       {
@@ -30,10 +32,8 @@ export default defineConfig({
           { text: '开发指南', link: '/开发指南' },
           { text: '配置指南', link: '/配置指南' },
           { text: '数据展示', link: '/文章数据展示指南' },
-          { text: '项目结构', link: '/开发指南#项目结构' },
-          { text: '代码规范', link: '/开发指南#代码规范' },
-          { text: '组件开发', link: '/开发指南#组件开发' },
-          { text: '性能优化', link: '/开发指南#性能优化' },
+          { text: '多语言路由', link: '/多语言路由架构' },
+          { text: '类型组织规范', link: '/类型组织规范' },
         ]
       },
       {
@@ -44,13 +44,6 @@ export default defineConfig({
           { text: '页面配置', link: '/config/页面配置' },
           { text: '站点配置', link: '/config/站点配置' },
           { text: 'API配置', link: '/config/API配置' },
-        ]
-      },
-      {
-        text: '架构',
-        items: [
-          { text: '多语言路由', link: '/多语言路由架构' },
-          { text: '类型组织规范', link: '/类型组织规范' },
         ]
       },
       {
