@@ -17,9 +17,11 @@ export default defineConfig({
       { 
         text: 'SEO运营',
         items: [
+          { text: 'SEO 文档目录', link: '/seo/README' },
           { text: 'SEO 流量战略', link: '/seo/SEO流量战略' },
-          { text: '子站 SEO 内容战略', link: '/seo/子站SEO内容战略' },
           { text: '内容发布指南', link: '/seo/内容发布指南' },
+          { text: 'AI 提示词工作流', link: '/seo/AI提示词工作流' },
+          { text: '内容追踪矩阵', link: '/seo/内容追踪矩阵' },
           { text: 'SEO 验证清单', link: '/seo/SEO验证清单' },
         ]
       },
@@ -58,9 +60,11 @@ export default defineConfig({
       {
         text: 'SEO 与运营',
         items: [
+          { text: 'SEO 文档目录', link: '/seo/README' },
           { text: 'SEO 流量战略', link: '/seo/SEO流量战略' },
-          { text: '子站 SEO 内容战略', link: '/seo/子站SEO内容战略' },
           { text: '内容发布指南', link: '/seo/内容发布指南' },
+          { text: 'AI 提示词工作流', link: '/seo/AI提示词工作流' },
+          { text: '内容追踪矩阵', link: '/seo/内容追踪矩阵' },
           { text: 'SEO 验证清单', link: '/seo/SEO验证清单' },
         ]
       },
