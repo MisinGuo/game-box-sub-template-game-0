@@ -14,8 +14,16 @@ export default defineConfig({
       { text: '首页', link: '/' },
       { text: '页面路由', link: '/页面路由说明' },
       { text: '开发指南', link: '/开发指南' },
-      { text: '部署教程', link: '/部署教程' },
-      { text: 'API文档', link: '/API接口文档' },
+      { 
+        text: 'SEO运营',
+        items: [
+          { text: 'SEO 流量战略', link: '/seo/SEO流量战略' },
+          { text: '子站 SEO 内容战略', link: '/seo/子站SEO内容战略' },
+          { text: '内容发布指南', link: '/seo/内容发布指南' },
+          { text: 'SEO 验证清单', link: '/seo/SEO验证清单' },
+        ]
+      },
+      { text: '部署', link: '/部署教程' },
     ],
     
     sidebar: [
@@ -32,6 +40,7 @@ export default defineConfig({
           { text: '开发指南', link: '/开发指南' },
           { text: '配置指南', link: '/配置指南' },
           { text: '数据展示', link: '/文章数据展示指南' },
+          { text: '路由管理系统', link: '/路由管理系统' },
           { text: '多语言路由', link: '/多语言路由架构' },
           { text: '类型组织规范', link: '/类型组织规范' },
         ]
@@ -47,11 +56,21 @@ export default defineConfig({
         ]
       },
       {
+        text: 'SEO 与运营',
+        items: [
+          { text: 'SEO 流量战略', link: '/seo/SEO流量战略' },
+          { text: '子站 SEO 内容战略', link: '/seo/子站SEO内容战略' },
+          { text: '内容发布指南', link: '/seo/内容发布指南' },
+          { text: 'SEO 验证清单', link: '/seo/SEO验证清单' },
+        ]
+      },
+      {
         text: '部署',
         items: [
           { text: '部署教程', link: '/部署教程' },
           { text: 'Cloudflare Pages', link: '/部署教程#cloudflare-pages-部署推荐' },
           { text: 'Cloudflare Workers', link: '/部署教程#cloudflare-workers-部署使用-opennext' },
+          { text: 'Cloudflare 缓存方案', link: '/Cloudflare缓存方案' },
           { text: '环境变量', link: '/部署教程#环境变量配置' },
         ]
       },

@@ -81,8 +81,16 @@ NEXT_PUBLIC_SITE_ID=8
 | [开发指南](./开发指南.md) | 项目结构、开发规范、组件开发 |
 | [配置指南](./配置指南.md) | 环境变量、站点配置、多语言配置 |
 | [数据展示指南](./文章数据展示指南.md) | API 调用、数据流、内容渲染 |
+| [路由管理系统](./路由管理系统.md) | 统一路由配置、导航/Sitemap自动生成 |
 | [多语言路由架构](./多语言路由架构.md) | i18n 路由设计、hreflang、语言切换 |
+| **SEO 与运营** | |
+| [SEO 流量战略](./seo/SEO流量战略.md) | 主站+子站整体 SEO 流量模型、内链转化路径 |
+| [子站 SEO 内容战略](./seo/子站SEO内容战略.md) | 子站品类垂直站内容架构、优先内容类型 |
+| [内容发布指南](./seo/内容发布指南.md) | 发文 Section 配置、发布前检查清单、内链规范 |
+| [SEO 验证清单](./seo/SEO验证清单.md) | 主站 SEO 改造项验证方法（canonical/hreflang/OG 等） |
+| **部署** | |
 | [部署教程](./部署教程.md) | Cloudflare Workers/Pages 部署完整步骤 |
+| [Cloudflare 缓存方案](./Cloudflare缓存方案.md) | 首页缓存各方案对比（no-cache / revalidate / Redis）|
 | [API 文档](./API接口文档.md) | 后端 API 接口说明 |
 
 ## 技术栈
