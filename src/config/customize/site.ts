@@ -56,7 +56,7 @@ const siteConfigData: SiteConfigFile = {
 
   site: {
     hostname: 'https://www.5awyx.com',
-    jumpDomain: 'https://download.example.com',
+    jumpDomain: 'https://www.5awyx.com',
     defaultLocale: 'zh-CN',
     supportedLocales: ['zh-CN', 'zh-TW', 'en-US'],
   },

@@ -1,7 +1,7 @@
 # 🧭 主站 + 卡牌子站 SEO 架构调整 — 执行方案
 
 > **生成日期**：2026-04-17  
-> **状态**：待审核  
+> **状态**：执行中（2026-04-17 更新）— 第一、二批全部完成，第三批待内容量积累后执行  
 > **范围**：Next-web（主站）、Next-web-sub（子站）、后端配置
 
 ---
@@ -15,7 +15,7 @@
 | 内容类型 | 资讯(news)、攻略(guides)、评测(reviews)、专题(topics) | 攻略(guides)、评测(reviews)、资讯(news) |
 | 子站→主站链接 | — | ✅ 已全面铺开（Header/Footer/Hero/下载入口/canonical） |
 | 主站→子站链接 | ⚠️ 基础设施就位（GameGuides/CategoryGuides 的 subSiteUrl prop），但**全局未配置子站域名** | — |
-| jumpDomain | ⚠️ 占位值 `download.example.com` | ✅ `https://www.5awyx.com` |
+| jumpDomain | ✅ `https://www.5awyx.com`（主站自身域名，用于 Markdown 模板变量替换） | ✅ `https://www.5awyx.com` |
 
 ---
 
@@ -37,44 +37,39 @@
 
 ---
 
-### P0-1：主站配置 — 补全 jumpDomain 和 subSiteUrl
+### P0-1：主站配置 — 修正 jumpDomain ✅ 已完成
 
-**问题**：主站 `site.ts` 的 `jumpDomain` 仍为占位值，且没有全局 `subSiteUrl` 配置。  
-**影响**：主站→子站的"攻略入口"链接不生效；Markdown 模板里的下载链接指向错误域名。
+**结论**：`jumpDomain` 已修正；`subSiteUrl` 全局配置**不添加**（原因见下）。
 
-**改动文件**：`Next-web/src/config/customize/site.ts`
+**已执行改动**：
 
+`Next-web/src/config/customize/site.ts`
 ```diff
 - jumpDomain: 'https://download.example.com',
 + jumpDomain: 'https://www.5awyx.com',
-+ subSiteUrl: 'https://kapai-web.94kj.cn',
 ```
 
+`Next-web/src/components/content/MarkdownRenderer.tsx`
+```diff
+- .replace(/\{\{siteConfig\.jumpDomain\}\}/g, '#')
++ .replace(/\{\{siteConfig\.jumpDomain\}\}/g, siteConfig.jumpDomain)
+```
+
+**关于 `subSiteUrl` 不加的原因**：  
+主站跳向子站的链接由服务端 API 数据决定，游戏 A 可能跳子站 X、游戏 B 可能跳子站 Y，并非固定的单一子站 URL。  
+`jumpDomain` 变量在主站语境下的正确语义是"Markdown 文章模板里的跳转域名指向主站自身"，与子站无关。
+
 **验证**：
-- 游戏详情页 `GameGuides` 组件是否显示"前往攻略专站"链接
-- Markdown 文章里的 `{{siteConfig.jumpDomain}}` 替换为正确域名
+- 主站 Markdown 文章中 `{{siteConfig.jumpDomain}}` 正确替换为 `https://www.5awyx.com`（不再渲染为 `#`）
 
 ---
 
-### P0-2：主站游戏详情页 — 激活攻略入口组件
+### P0-2：主站游戏详情页 — 激活攻略入口组件 ❌ 取消
 
-**问题**：`GameGuides` 组件已支持 `subSiteUrl` prop，但主站页面传入的值依赖后端 API 下发（不稳定）。  
-**方案**：在游戏详情页 `Next-web/src/app/[locale]/games/[id]/page.tsx` 中，读取全局 `siteConfig.subSiteUrl` 作为 fallback。
+**取消原因**：每款游戏对应哪个子站（或是否有子站）由服务端 API 下发决定，不是所有游戏都归属同一个子站。  
+不存在一个全局 `subSiteUrl` 可以作为通用 fallback，强行 fallback 会导致不相关游戏出现错误的子站链接。  
 
-**改动文件**：`Next-web/src/app/[locale]/games/[id]/page.tsx`
-
-```diff
-  <GameGuides
-    game={game}
--   subSiteUrl={game.subSiteUrl}
-+   subSiteUrl={game.subSiteUrl || siteConfig.subSiteUrl}
-    locale={locale}
-  />
-```
-
-同理检查 `CategoryGuides` 组件的调用处。
-
-**验证**：每个游戏详情页底部出现"前往攻略专站查看更多"链接。
+**结论**：`GameGuides` / `CategoryGuides` 的 `subSiteUrl` prop 继续保持由后端 API 数据驱动，前端不做改动。
 
 ---
 
@@ -98,33 +93,13 @@
 
 ---
 
-### P1-1：主站内容降级策略 — 区分功能型 vs SEO型文章
+### P1-1：主站内容降级策略 — 区分功能型 vs SEO型文章 ❌ 代码部分取消
 
-**问题**：按新策略，主站不再做深度攻略/教程类 SEO 文章。  
-**方案**：不删除现有文章（损SEO），而是：
+**取消原因**：子站引导条依赖全局 `subSiteUrl`，而主站面向多个子站，无法固定单一 URL 写死在代码里。该入口应由后端配置驱动，前端代码暂不改动。
 
-1. **停止在主站发布新的深度攻略文章**（操作规范，非代码改动）
-2. **主站 `/content/guides/` 页面加弱提示**，引导用户去子站看深度攻略
-
-**改动文件**：`Next-web/src/app/[locale]/content/guides/page.tsx`（或对应布局组件）
-
-```tsx
-{/* 在攻略列表顶部添加子站引导 */}
-{siteConfig.subSiteUrl && (
-  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6 text-center">
-    <p className="text-sm text-muted-foreground">
-      想看更深度的卡牌游戏攻略？
-      <a href={siteConfig.subSiteUrl + '/guides'}
-         target="_blank" rel="noopener noreferrer"
-         className="text-primary font-medium ml-1">
-        前往卡牌攻略专站 →
-      </a>
-    </p>
-  </div>
-)}
-```
-
-**验证**：主站攻略列表页顶部出现子站引导条。
+**保留的操作规范**（无代码改动）：
+1. **停止在主站发布新的深度攻略文章** — 后台操作规范，攻略文章只发到对应子站
+2. 不删除主站已有文章，自然降权即可
 
 ---
 
@@ -249,23 +224,9 @@ Next-web-sub/src/app/[locale]/meta/[slug]/page.tsx  ← Meta分析详情
 
 ---
 
-### P2-2：主站分类页 — 增加子站攻略入口
+### P2-2：主站分类页 — 增加子站攻略入口 ❌ 取消
 
-**问题**：主站 `/games/category/[slug]` 品类页可以链接子站对应品类攻略。  
-**方案**：`CategoryGuides` 组件已支持 `subSiteUrl` prop。
-
-**改动文件**：`Next-web/src/app/[locale]/games/category/[slug]/page.tsx`
-
-确保传入 `siteConfig.subSiteUrl`：
-
-```diff
-  <CategoryGuides
-    category={category}
--   subSiteUrl={category.subSiteUrl}
-+   subSiteUrl={category.subSiteUrl || siteConfig.subSiteUrl}
-    locale={locale}
-  />
-```
+**取消原因**：同 P0-2 / P1-1。分类对应哪个子站由后端 API 决定，`CategoryGuides` 的 `subSiteUrl` prop 继续由服务端数据驱动，前端不添加全局 fallback。
 
 ---
 
@@ -299,16 +260,16 @@ Next-web-sub/src/app/[locale]/meta/[slug]/page.tsx  ← Meta分析详情
 ## 四、改动优先级排序
 
 ```
-第一批（立即执行，< 1小时）
-├── P0-1  主站 jumpDomain + subSiteUrl 配置
-├── P0-2  主站游戏详情页激活攻略入口
-├── P0-3  更新内容发布指南（子站内链规则）
-└── P1-5  关键词分配表
+第一批（已完成）
+├── P0-1  ✅ jumpDomain 修正 + MarkdownRenderer 模板变量修复
+├── P0-2  ❌ 取消（主→子链接由后端 API 驱动，无全局单一子站 URL）
+├── P0-3  ✅ 内容发布指南新增子站内链规则（含模板变量写法 + APK禁止）
+└── P1-5  ✅ 内容发布指南新增关键词归属表
 
-第二批（本周内执行）
-├── P1-1  主站攻略列表页添加子站引导
-├── P2-2  主站分类页传入 subSiteUrl
-└── P2-3  子站 sitemap maxUrls 对齐
+第二批（已完成）
+├── P1-1  ❌ 代码部分取消（原因同 P0-2）；操作规范部分保留
+├── P2-2  ❌ 取消（原因同 P0-2）
+└── P2-3  ✅ 子站 sitemap maxUrlsPerSitemap 改为 10000
 
 第三批（内容量起来后执行）
 ├── P1-3  子站新增板块 slug（如 deck-builds, meta-analysis）
@@ -322,13 +283,16 @@ Next-web-sub/src/app/[locale]/meta/[slug]/page.tsx  ← Meta分析详情
 
 改动完成后，逐项检查：
 
-- [ ] 主站游戏详情页 → 出现"前往攻略专站"链接 → 点击跳转到子站
-- [ ] 子站攻略文章 → 包含指向 `www.5awyx.com/games/[id]` 的链接
+- [x] 主站 `jumpDomain` 已改为 `https://www.5awyx.com`
+- [x] 主站 Markdown 文章中 `{{siteConfig.jumpDomain}}` 正确替换为 `https://www.5awyx.com`（`MarkdownRenderer.tsx` 已修复，不再渲染为 `#`）
+- [x] 内容发布指南新增关键词归属表（主站/子站各守各的关键词方向）
+- [x] 内容发布指南子站内链规则补充模板变量写法 + APK 直链禁止规定
+- [x] 子站 sitemap `maxUrlsPerSitemap` 已改为 10000（与主站对齐）
+- [ ] 子站攻略文章 → 包含指向 `www.5awyx.com/games/[id]` 的链接（操作规范，人工执行）
 - [ ] 子站游戏详情页 → canonical 指向主站（已有，确认未变）
-- [ ] 主站攻略列表页 → 显示子站引导条
+- ~~主站游戏详情页攻略入口~~ — 由后端 API 数据驱动，不在前端写死
+- ~~主站攻略列表页子站引导条~~ — 由后端 API 数据驱动，不在前端写死
 - [ ] 同一关键词没有在两站同时出现文章
-- [ ] 子站 sitemap 生成正常，max 10000
-- [ ] 主站 Markdown 文章中 `{{siteConfig.jumpDomain}}` 替换为 `https://www.5awyx.com`
 
 ---
 

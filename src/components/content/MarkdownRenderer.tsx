@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import type { Components } from 'react-markdown'
+import { siteConfig } from '@/config/site/site'
 
 interface MarkdownRendererProps {
   content: string
@@ -166,9 +167,9 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
   // 移除 YAML frontmatter
   const contentWithoutFrontmatter = content.replace(/^---[\s\S]*?---\n*/m, '')
   
-  // 处理模板变量（替换为占位符或移除）
+  // 处理模板变量
   const processedContent = contentWithoutFrontmatter
-    .replace(/\{\{siteConfig\.jumpDomain\}\}/g, '#')
+    .replace(/\{\{siteConfig\.jumpDomain\}\}/g, siteConfig.jumpDomain)
     .replace(/\{\{[^}]+\}\}/g, '')
   
   return (
