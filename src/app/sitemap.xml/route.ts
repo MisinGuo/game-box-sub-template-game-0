@@ -12,7 +12,9 @@ import type { ContentType } from '@/lib/sitemap/types'
  * 包含所有语言的 sitemap 链接（两层结构：索引 → urlset，不嵌套 sitemapindex）
  */
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'auto'
+// revalidate 用固定值（Next.js 要求编译期常量），实际 TTL 由 SITEMAP_CACHE_TTL_SECONDS 控制
+export const revalidate = 86400
 
 const validTypes = Object.keys(sitemapConfig.contentTypes) as ContentType[]
 
@@ -31,7 +33,7 @@ const SITEMAP_CACHE_TTL_SECONDS = readPositiveIntFromEnv('SITEMAP_RESPONSE_CACHE
 function getSitemapCacheControl(): string {
   if (process.env.NODE_ENV === 'development') return 'no-store, max-age=0'
   const ttl = SITEMAP_CACHE_TTL_SECONDS
-  return `public, max-age=${ttl}, s-maxage=${ttl}`
+  return `public, s-maxage=${ttl}, stale-while-revalidate=86400`
 }
 
 function getWorkersEdgeCache(): Cache | null {

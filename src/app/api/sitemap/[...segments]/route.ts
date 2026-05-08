@@ -11,8 +11,8 @@ import { getSecureHostname } from '@/lib/sitemap/security'
 import type { ContentType } from '@/lib/sitemap/types'
 import { sitemapConfig } from '@/config/sitemap/config'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 3600
+export const dynamic = 'auto'
+export const revalidate = 86400
 
 const validTypes = Object.keys(sitemapConfig.contentTypes) as ContentType[]
 const USE_WORKERS_EDGE_CACHE = process.env.CLOUDFLARE_WORKERS === 'true'
@@ -33,7 +33,7 @@ function readPositiveIntFromEnv(name: string, fallback: number): number {
 
 const WORKERS_SITEMAP_RESPONSE_CACHE_TTL_SECONDS = readPositiveIntFromEnv(
   'SITEMAP_RESPONSE_CACHE_TTL_SECONDS',
-  3600
+  86400
 )
 
 function canUseWorkersEdgeCache(): boolean {
@@ -89,7 +89,7 @@ async function tryWriteWorkersEdgeCache(request: Request, response: Response): P
 function getSitemapCacheControl(): string {
   if (process.env.NODE_ENV === 'development') return 'no-store, max-age=0'
   const ttl = WORKERS_SITEMAP_RESPONSE_CACHE_TTL_SECONDS
-  return `public, max-age=${ttl}, s-maxage=${ttl}`
+  return `public, s-maxage=${ttl}, stale-while-revalidate=86400`
 }
 
 export async function GET(
