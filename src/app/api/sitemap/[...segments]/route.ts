@@ -87,9 +87,9 @@ async function tryWriteWorkersEdgeCache(request: Request, response: Response): P
 }
 
 function getSitemapCacheControl(): string {
-  return process.env.NODE_ENV === 'development'
-    ? 'no-store, max-age=0'
-    : 'public, max-age=3600, s-maxage=3600'
+  if (process.env.NODE_ENV === 'development') return 'no-store, max-age=0'
+  const ttl = WORKERS_SITEMAP_RESPONSE_CACHE_TTL_SECONDS
+  return `public, max-age=${ttl}, s-maxage=${ttl}`
 }
 
 export async function GET(

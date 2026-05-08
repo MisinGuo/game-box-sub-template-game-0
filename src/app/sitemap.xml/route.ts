@@ -13,17 +13,44 @@ import type { ContentType } from '@/lib/sitemap/types'
  */
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 3600 // 1小时重新生成
 
 const validTypes = Object.keys(sitemapConfig.contentTypes) as ContentType[]
 
+const USE_WORKERS_EDGE_CACHE = process.env.CLOUDFLARE_WORKERS === 'true'
+
+function readPositiveIntFromEnv(name: string, fallback: number): number {
+  const raw = process.env[name]
+  if (!raw) return fallback
+  const parsed = Number.parseInt(raw, 10)
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback
+}
+
+// 读取环境变量，默认 86400 秒（24 小时）
+const SITEMAP_CACHE_TTL_SECONDS = readPositiveIntFromEnv('SITEMAP_RESPONSE_CACHE_TTL_SECONDS', 86400)
+
 function getSitemapCacheControl(): string {
-  return process.env.NODE_ENV === 'development'
-    ? 'no-store, max-age=0'
-    : 'public, max-age=3600, s-maxage=3600'
+  if (process.env.NODE_ENV === 'development') return 'no-store, max-age=0'
+  const ttl = SITEMAP_CACHE_TTL_SECONDS
+  return `public, max-age=${ttl}, s-maxage=${ttl}`
+}
+
+function getWorkersEdgeCache(): Cache | null {
+  if (!USE_WORKERS_EDGE_CACHE || SITEMAP_CACHE_TTL_SECONDS <= 0) return null
+  return (globalThis as any)?.caches?.default as Cache | null ?? null
 }
 
 export async function GET(request: Request) {
+  // Workers Edge Cache：命中则直接返回，避免重复拉取数据
+  const edgeCache = getWorkersEdgeCache()
+  if (edgeCache) {
+    const cached = await edgeCache.match(request)
+    if (cached) {
+      const headers = new Headers(cached.headers)
+      headers.set('X-Sitemap-Worker-Cache', 'HIT')
+      return new NextResponse(cached.body, { status: cached.status, headers })
+    }
+  }
+
   try {
     // 验证并获取安全的 hostname（防止内容被盗用）
     const hostname = getSecureHostname(request)
@@ -85,12 +112,20 @@ export async function GET(request: Request) {
     console.log('[Sitemap] 生成主索引 sitemap.xml，共', entries.length, '条')
     const xml = generateSitemapIndex(hostname, entries)
 
-    return new NextResponse(xml, {
+    const response = new NextResponse(xml, {
       headers: {
         'Content-Type': 'application/xml; charset=utf-8',
         'Cache-Control': getSitemapCacheControl(),
+        'X-Sitemap-Worker-Cache': 'MISS',
       },
     })
+
+    // 写入 Workers Edge Cache，下次请求直接命中
+    if (edgeCache) {
+      await edgeCache.put(request, response.clone())
+    }
+
+    return response
   } catch (error) {
     console.error('生成主 sitemap 索引失败:', error)
     return new NextResponse('生成 sitemap 失败', { status: 500 })
