@@ -25,6 +25,8 @@ CLOUDFLARE_WORKERS = "true"
 # 请替换为你实际的后端API地址
 NEXT_PUBLIC_API_URL = "http://local.zeusai.top:8890"
 NEXT_PUBLIC_SITE_ID = "1"
+# 生产环境站点域名，用于 Cron 预热 sitemap 缓存
+SITE_URL = "https://www.5awyx.com"
 
 # ----这里可以跨请求，也就是只要缓存后所有的人访问都会提速，但是SITEMAP_GAME_PAGE_CACHE_TTL_MS是用于单主机即在cfworkers上不生效
 # games sitemap 分页缓存 TTL（毫秒） 
@@ -48,3 +50,7 @@ SITEMAP_RESPONSE_CACHE_TTL_SECONDS = "86400"
 [observability.logs]
 enabled = true
 invocation_logs = true
+
+# Cron 触发器：每天 UTC 16:00（北京时间 0:00）预热 sitemap 缓存
+[triggers]
+crons = ["0 16 * * *"]
