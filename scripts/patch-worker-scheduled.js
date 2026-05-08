@@ -77,24 +77,23 @@ function main() {
   // 在最后的 `};` 前注入 scheduled 方法
   // opennextjs-cloudflare 生成的 worker.js 末尾固定为：
   //   ...
-  //     },       ← fetch 方法结尾
+  //     },       ← fetch 方法结尾（含逗号）
   //   };         ← export default 对象结尾
-  const marker = /(\n    },\n\};\s*)$/
+  //
+  // 目标输出：
+  //     },
+  //     async scheduled(event, env, ctx) { ... },
+  //   };
+  const marker = /\n    },\n\};\s*$/
   if (!marker.test(content)) {
-    // 降级：匹配更宽松的末尾
-    const fallbackMarker = /(\n\};\s*)$/
-    if (!fallbackMarker.test(content)) {
-      console.error('[patch-worker-scheduled] 未找到 export default 末尾 `};`，无法注入')
-      process.exit(1)
-    }
-    content = content.replace(fallbackMarker, (_, tail) => {
-      return `    ,async scheduled(event, env, ctx) {\n        ctx.waitUntil(__warmSitemapCache(env));\n    }${tail}${INJECTION}`
-    })
-  } else {
-    content = content.replace(marker, (_, tail) => {
-      return `\n    },\n    async scheduled(event, env, ctx) {\n        ctx.waitUntil(__warmSitemapCache(env));\n    }${tail}${INJECTION}`
-    })
+    console.error('[patch-worker-scheduled] 未找到 export default 末尾 `};`，无法注入')
+    process.exit(1)
   }
+
+  content = content.replace(
+    marker,
+    `\n    },\n    async scheduled(event, env, ctx) {\n        ctx.waitUntil(__warmSitemapCache(env));\n    },\n};\n${INJECTION}`
+  )
 
   fs.writeFileSync(WORKER_PATH, content, 'utf8')
   console.log('[patch-worker-scheduled] 成功注入 scheduled handler')
