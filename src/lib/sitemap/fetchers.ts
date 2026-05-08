@@ -20,6 +20,21 @@ function toSitemapLastmod(value?: string | null): string {
   return value.replace(' ', 'T') + 'Z'
 }
 
+/**
+ * 从文章/游戏列表中取最新的 updateTime 或 createTime
+ * 用于列表页 lastmod，避免每次请求使用 new Date()
+ */
+function latestUpdateTime(items: any[]): string | undefined {
+  let latest: string | undefined
+  for (const item of items) {
+    const t = item.updateTime || item.createTime
+    if (!t) continue
+    const norm = toSitemapLastmod(t)
+    if (!latest || norm > latest) latest = norm
+  }
+  return latest
+}
+
 const GAME_CATEGORY_PAGE_SIZE = 24
 const GAME_API_PAGE_SIZE = 100
 const GAME_FETCH_CONCURRENCY = 4
@@ -349,9 +364,12 @@ async function devCheckMissingRoutes(): Promise<void> {
 /**
  * 获取静态页面 URLs
  */
-export async function fetchStaticUrls(locale: string, hostname: string): Promise<SitemapUrl[]> {
+export async function fetchStaticUrls(locale: string, hostname: string, latestArticleDate?: string): Promise<SitemapUrl[]> {
   // 开发模式下异步校验（不阻塞返回）
   devCheckMissingRoutes()
+
+  const fallbackDate = new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z'
+  const lastmod = latestArticleDate || fallbackDate
 
   const staticPaths = getStaticPaths()
   
@@ -360,7 +378,7 @@ export async function fetchStaticUrls(locale: string, hostname: string): Promise
   
   return staticPaths.map((path) => ({
     loc: `${hostname}${localePrefix}${path}`,
-    lastmod: new Date().toISOString(),
+    lastmod,
     changefreq: config.changefreq as any,
     priority: config.priority,
     alternates: generateAlternateUrls(path, hostname),
@@ -380,7 +398,7 @@ export async function fetchGameUrls(locale: string, hostname: string): Promise<S
       locale: locale as any,
       pageNum: 1,
       pageSize: 10000, // 获取所有
-    })
+    }, { cache: 'no-store' })
     
     console.log('[Sitemap] 游戏API响应:', {
       code: response.code,
@@ -392,6 +410,8 @@ export async function fetchGameUrls(locale: string, hostname: string): Promise<S
     
     const games = response.rows || []
     console.log('[Sitemap] 解析游戏数组，长度:', games.length)
+    const latestGameDate = latestUpdateTime(games)
+      || new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z'
     const config = contentTypes.games
     const localePrefix = locale === defaultLocale ? '' : `/${locale}`
     
@@ -425,7 +445,7 @@ export async function fetchGameUrls(locale: string, hostname: string): Promise<S
         const path = `/games/category/${slug}`
         urls.push({
           loc: `${hostname}${localePrefix}${path}`,
-          lastmod: new Date().toISOString(),
+          lastmod: latestGameDate,
           changefreq: 'weekly' as any,
           priority: 0.7,
           alternates: generateAlternateUrls(path, hostname),
@@ -444,7 +464,7 @@ export async function fetchGameUrls(locale: string, hostname: string): Promise<S
           const pagedPath = `${path}?page=${page}`
           urls.push({
             loc: `${hostname}${localePrefix}${pagedPath}`,
-            lastmod: new Date().toISOString(),
+            lastmod: latestGameDate,
             changefreq: 'weekly' as any,
             priority: 0.6,
             alternates: generateAlternateUrls(pagedPath, hostname),
@@ -539,12 +559,13 @@ function buildGameDetailSitemapUrl(game: any, localePrefix: string, hostname: st
   }
 }
 
-function buildGameCategorySitemapUrl(slug: string, page: number, localePrefix: string, hostname: string): SitemapUrl {
+function buildGameCategorySitemapUrl(slug: string, page: number, localePrefix: string, hostname: string, lastmod?: string): SitemapUrl {
   const basePath = `/games/category/${slug}`
   const path = page <= 1 ? basePath : `${basePath}?page=${page}`
+  const fallbackDate = new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z'
   return {
     loc: `${hostname}${localePrefix}${path}`,
-    lastmod: new Date().toISOString(),
+    lastmod: lastmod || fallbackDate,
     changefreq: 'weekly' as any,
     priority: page <= 1 ? 0.7 : 0.6,
     alternates: generateAlternateUrls(path, hostname),
@@ -829,8 +850,25 @@ export async function fetchUrlsByType(
   console.log(`[Sitemap] 获取 ${locale} 的 ${type} URLs...`)
   
   switch (type) {
-    case 'static':
-      return fetchStaticUrls(locale, hostname)
+    case 'static': {
+      // 并行拉取各内容类型最新文章时间，取最大值作为列表页 lastmod
+      const [guidesResult, reviewsResult, newsResult] = await Promise.allSettled([
+        fetchGuidesUrls(locale, hostname),
+        fetchReviewsUrls(locale, hostname),
+        fetchNewsUrls(locale, hostname),
+      ])
+      const allArticleUrls = [
+        ...(guidesResult.status === 'fulfilled' ? guidesResult.value : []),
+        ...(reviewsResult.status === 'fulfilled' ? reviewsResult.value : []),
+        ...(newsResult.status === 'fulfilled' ? newsResult.value : []),
+      ]
+      const latestArticleDate = allArticleUrls
+        .map(u => u.lastmod ?? '')
+        .filter(Boolean)
+        .sort()
+        .at(-1)
+      return fetchStaticUrls(locale, hostname, latestArticleDate)
+    }
     case 'games':
       return fetchGameUrls(locale, hostname)
     case 'boxes':

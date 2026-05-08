@@ -65,7 +65,14 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: siteDescription,
     keywords: siteKeywords,
-    verification: siteConfig.verification,
+    verification: {
+      ...siteConfig.verification,
+      ...(
+        process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || siteConfig.verification?.google
+          ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || siteConfig.verification?.google }
+          : {}
+      ),
+    },
     openGraph: {
       type: 'website',
       locale: ogLocaleMap[locale] || 'zh_CN',
