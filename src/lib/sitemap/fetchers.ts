@@ -278,30 +278,31 @@ function getStaticPaths(): string[] {
 }
 
 async function fetchArticlesBySections(locale: string, sections: readonly string[]): Promise<any[]> {
-  const articleMap = new Map<number, any>()
+  if (sections.length === 0) return []
 
-  for (const section of sections) {
-    try {
-      const response = await ApiClient.getArticles({
-        locale: locale as any,
-        pageNum: 1,
-        pageSize: 10000,
-        section: section as any,
-      })
+  try {
+    const response = await ApiClient.getArticles({
+      locale: locale as any,
+      pageNum: 1,
+      pageSize: 10000,
+      sections: sections.join(','),
+    })
 
-      if (response.code === 200 && response.rows) {
-        for (const article of response.rows) {
-          if (article?.id) {
-            articleMap.set(article.masterArticleId, article)
-          }
+    if (response.code === 200 && response.rows) {
+      // 去重（masterArticleId 相同的只保留一条）
+      const articleMap = new Map<number, any>()
+      for (const article of response.rows) {
+        if (article?.masterArticleId) {
+          articleMap.set(article.masterArticleId, article)
         }
       }
-    } catch (error) {
-      console.warn(`[Sitemap] 获取 section=${section} 文章失败:`, error)
+      return Array.from(articleMap.values())
     }
+  } catch (error) {
+    console.warn(`[Sitemap] 批量获取 sections=${sections.join(',')} 文章失败:`, error)
   }
 
-  return Array.from(articleMap.values())
+  return []
 }
 
 /**

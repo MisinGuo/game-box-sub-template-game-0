@@ -175,8 +175,10 @@ export interface ArticleListParams extends LocalePaginationParams {
   tagId?: number
   /** 是否置顶 */
   isTop?: string
-  /** 文章板块或分类 slug（由站点配置维护） */
+  /** 文章板块或分类 slug（单个，由站点配置维护） */
   section?: string
+  /** 批量板块 slug，逗号分隔，服务端一次性查询所有板块 */
+  sections?: string
 }
 
 /**

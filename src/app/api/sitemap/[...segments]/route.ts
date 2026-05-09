@@ -72,12 +72,17 @@ export async function GET(
     try {
       const entries: { type: ContentType; chunk: number; lastmod?: string }[] = []
 
-      for (const type of validTypes) {
-        const chunkCount = type === 'games'
-          ? await getGameSitemapChunkCount(locale)
-          : getSitemapChunkCount((await fetchUrlsByType(locale, type, hostname)).length)
-        const lastmod = new Date().toISOString()
+      const typeChunkCounts = await Promise.all(
+        validTypes.map(async (type) => {
+          const chunkCount = type === 'games'
+            ? await getGameSitemapChunkCount(locale)
+            : getSitemapChunkCount((await fetchUrlsByType(locale, type, hostname)).length)
+          return { type, chunkCount }
+        })
+      )
 
+      const lastmod = new Date().toISOString()
+      for (const { type, chunkCount } of typeChunkCounts) {
         for (let chunk = 1; chunk <= chunkCount; chunk += 1) {
           entries.push({ type, chunk, lastmod })
         }
