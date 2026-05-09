@@ -12,42 +12,44 @@ import type { ContentType } from '@/lib/sitemap/types'
  * 包含所有语言的 sitemap 链接（两层结构：索引 → urlset，不嵌套 sitemapindex）
  */
 
-export const dynamic = 'auto'
-// revalidate 用固定值（Next.js 要求编译期常量），实际 TTL 由 SITEMAP_CACHE_TTL_SECONDS 控制
-export const revalidate = 86400
+const CACHE_TTL = 86400 // 1 day
 
 const validTypes = Object.keys(sitemapConfig.contentTypes) as ContentType[]
 
-function getSitemapCacheTtl(): number {
-  const raw = process.env.SITEMAP_RESPONSE_CACHE_TTL_SECONDS
-  if (!raw) return 86400
-  const parsed = Number.parseInt(raw, 10)
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 86400
-}
-
 function getSitemapCacheControl(): string {
-  if (process.env.NODE_ENV === 'development') return 'no-store, max-age=0'
-  const ttl = getSitemapCacheTtl()
-  return `public, max-age=${ttl}, s-maxage=${ttl}, stale-while-revalidate=86400`
+  return process.env.NODE_ENV === 'development'
+    ? 'no-store, max-age=0'
+    : `public, max-age=${CACHE_TTL}, s-maxage=${CACHE_TTL}, stale-while-revalidate=${CACHE_TTL}`
 }
 
-function getWorkersEdgeCache(): Cache | null {
-  // 在请求时读取，避免模块初始化时 env 尚未注入
-  if (process.env.CLOUDFLARE_WORKERS !== 'true') return null
-  if (getSitemapCacheTtl() <= 0) return null
-  return (globalThis as any)?.caches?.default as Cache | null ?? null
+/** Cloudflare Cache API — 每个 PoP 本地缓存，避免重复打后端 */
+async function getCfCache(url: string): Promise<Response | null> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cfCaches = (globalThis as any).caches
+    if (!cfCaches) return null
+    return (await cfCaches.default.match(new Request(url))) ?? null
+  } catch {
+    return null
+  }
+}
+
+async function putCfCache(url: string, response: Response): Promise<void> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cfCaches = (globalThis as any).caches
+    if (!cfCaches) return
+    await cfCaches.default.put(new Request(url), response)
+  } catch {
+    // 缓存失败不影响正常响应
+  }
 }
 
 export async function GET(request: Request) {
-  // Workers Edge Cache：命中则直接返回，避免重复拉取数据
-  const edgeCache = getWorkersEdgeCache()
-  if (edgeCache) {
-    const cached = await edgeCache.match(request)
-    if (cached) {
-      const headers = new Headers(cached.headers)
-      headers.set('X-Sitemap-Worker-Cache', 'HIT')
-      return new NextResponse(cached.body, { status: cached.status, headers })
-    }
+  // 优先从 Cloudflare PoP 本地缓存返回，避免穿透后端
+  if (process.env.NODE_ENV !== 'development') {
+    const cached = await getCfCache(request.url)
+    if (cached) return cached
   }
 
   try {
@@ -115,13 +117,11 @@ export async function GET(request: Request) {
       headers: {
         'Content-Type': 'application/xml; charset=utf-8',
         'Cache-Control': getSitemapCacheControl(),
-        'X-Sitemap-Worker-Cache': 'MISS',
       },
     })
 
-    // 写入 Workers Edge Cache，下次请求直接命中
-    if (edgeCache) {
-      await edgeCache.put(request, response.clone())
+    if (process.env.NODE_ENV !== 'development') {
+      await putCfCache(request.url, response.clone())
     }
 
     return response
