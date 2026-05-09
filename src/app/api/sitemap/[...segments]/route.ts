@@ -15,29 +15,18 @@ export const dynamic = 'auto'
 export const revalidate = 86400
 
 const validTypes = Object.keys(sitemapConfig.contentTypes) as ContentType[]
-const USE_WORKERS_EDGE_CACHE = process.env.CLOUDFLARE_WORKERS === 'true'
 
-function readPositiveIntFromEnv(name: string, fallback: number): number {
-  const raw = process.env[name]
-  if (!raw) {
-    return fallback
-  }
-
+function getSitemapCacheTtl(): number {
+  const raw = process.env.SITEMAP_RESPONSE_CACHE_TTL_SECONDS
+  if (!raw) return 86400
   const parsed = Number.parseInt(raw, 10)
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return fallback
-  }
-
-  return parsed
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 86400
 }
 
-const WORKERS_SITEMAP_RESPONSE_CACHE_TTL_SECONDS = readPositiveIntFromEnv(
-  'SITEMAP_RESPONSE_CACHE_TTL_SECONDS',
-  86400
-)
-
 function canUseWorkersEdgeCache(): boolean {
-  return USE_WORKERS_EDGE_CACHE && typeof caches !== 'undefined' && WORKERS_SITEMAP_RESPONSE_CACHE_TTL_SECONDS > 0
+  // 在请求时读取，避免模块初始化时 env 尚未注入
+  if (process.env.CLOUDFLARE_WORKERS !== 'true') return false
+  return getSitemapCacheTtl() > 0
 }
 
 function getWorkersEdgeCache(): Cache | null {
@@ -88,8 +77,8 @@ async function tryWriteWorkersEdgeCache(request: Request, response: Response): P
 
 function getSitemapCacheControl(): string {
   if (process.env.NODE_ENV === 'development') return 'no-store, max-age=0'
-  const ttl = WORKERS_SITEMAP_RESPONSE_CACHE_TTL_SECONDS
-  return `public, s-maxage=${ttl}, stale-while-revalidate=86400`
+  const ttl = getSitemapCacheTtl()
+  return `public, max-age=${ttl}, s-maxage=${ttl}, stale-while-revalidate=86400`
 }
 
 export async function GET(

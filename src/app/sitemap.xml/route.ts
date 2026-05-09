@@ -18,26 +18,23 @@ export const revalidate = 86400
 
 const validTypes = Object.keys(sitemapConfig.contentTypes) as ContentType[]
 
-const USE_WORKERS_EDGE_CACHE = process.env.CLOUDFLARE_WORKERS === 'true'
-
-function readPositiveIntFromEnv(name: string, fallback: number): number {
-  const raw = process.env[name]
-  if (!raw) return fallback
+function getSitemapCacheTtl(): number {
+  const raw = process.env.SITEMAP_RESPONSE_CACHE_TTL_SECONDS
+  if (!raw) return 86400
   const parsed = Number.parseInt(raw, 10)
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 86400
 }
-
-// 读取环境变量，默认 86400 秒（24 小时）
-const SITEMAP_CACHE_TTL_SECONDS = readPositiveIntFromEnv('SITEMAP_RESPONSE_CACHE_TTL_SECONDS', 86400)
 
 function getSitemapCacheControl(): string {
   if (process.env.NODE_ENV === 'development') return 'no-store, max-age=0'
-  const ttl = SITEMAP_CACHE_TTL_SECONDS
-  return `public, s-maxage=${ttl}, stale-while-revalidate=86400`
+  const ttl = getSitemapCacheTtl()
+  return `public, max-age=${ttl}, s-maxage=${ttl}, stale-while-revalidate=86400`
 }
 
 function getWorkersEdgeCache(): Cache | null {
-  if (!USE_WORKERS_EDGE_CACHE || SITEMAP_CACHE_TTL_SECONDS <= 0) return null
+  // 在请求时读取，避免模块初始化时 env 尚未注入
+  if (process.env.CLOUDFLARE_WORKERS !== 'true') return null
+  if (getSitemapCacheTtl() <= 0) return null
   return (globalThis as any)?.caches?.default as Cache | null ?? null
 }
 
