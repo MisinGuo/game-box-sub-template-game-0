@@ -165,6 +165,19 @@ export class ApiClient {
     })
   }
 
+  /** 获取聚合文章（Topics）列表 */
+  static async getTopics(params: { locale?: string; pageNum?: number; pageSize?: number } = {}) {
+    return request(apiEndpoints.topics, {
+      method: 'GET',
+      params: prepareParams({
+        locale: getCurrentLocale(params.locale as any),
+        pageNum: params.pageNum || 1,
+        pageSize: params.pageSize || 50,
+      }),
+      next: { revalidate: 600, tags: ['topics'] },
+    })
+  }
+
   /** 获取文章详情（用于攻略详情） */
   static async getArticleDetail(id: number, locale?: string) {
     return request(`${apiEndpoints.articleDetail}/${id}`, {

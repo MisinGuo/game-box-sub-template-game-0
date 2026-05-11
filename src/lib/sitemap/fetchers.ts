@@ -452,14 +452,12 @@ export async function fetchGameUrls(locale: string, hostname: string): Promise<S
           alternates: generateAlternateUrls(path, hostname),
         })
 
-        // 分类分页页（第 1 页为分类根路径，不追加 page 参数）
-        const categoryGamesResponse = await ApiClient.getCategoryGames(category.id, {
-          locale: locale as any,
-          pageNum: 1,
-          pageSize: 1,
-        })
-        const total = Math.max(Number(categoryGamesResponse.total || categoryGamesResponse.rows?.length || 0), 0)
-        const totalPages = Math.max(Math.ceil(total / GAME_CATEGORY_PAGE_SIZE), 1)
+        // 从分类对象直接取游戏数量，避免 N+1 额外请求
+        const categoryCount = Math.max(
+          Number(category.relatedDataCount ?? category.count ?? category.gameCount ?? category.total ?? 0),
+          0
+        )
+        const totalPages = Math.max(Math.ceil(categoryCount / GAME_CATEGORY_PAGE_SIZE), 1)
 
         for (let page = 2; page <= totalPages; page += 1) {
           const pagedPath = `${path}?page=${page}`
@@ -820,12 +818,13 @@ export async function fetchReviewsUrls(locale: string, hostname: string): Promis
  */
 export async function fetchTopicsUrls(locale: string, hostname: string): Promise<SitemapUrl[]> {
   try {
-    const articles = await fetchArticlesBySections(locale, SiteSectionSlugGroups.topics as readonly string[])
+    const response = await ApiClient.getTopics({ locale, pageNum: 1, pageSize: 200 })
+    if (response.code !== 200 || !response.rows) return []
     const config = contentTypes.topics
     const localePrefix = locale === defaultLocale ? '' : `/${locale}`
 
-    return articles.map((article: any) => {
-      const path = `/content/topics/${article.masterArticleId}`
+    return response.rows.map((article: any) => {
+      const path = `/topics/${article.masterArticleId}`
       return {
         loc: `${hostname}${localePrefix}${path}`,
         lastmod: toSitemapLastmod(article.updateTime),

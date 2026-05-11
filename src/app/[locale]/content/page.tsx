@@ -110,7 +110,7 @@ export default async function ContentCenterPage({
       title: t('topicsTitle'),
       description: t('topicsDesc'),
       icon: '🏆',
-      href: `${basePath}/content/topics`,
+      href: `${basePath}/topics`,
       bgClass: 'bg-gradient-to-br from-green-500/10 to-teal-500/10',
       border: 'hover:border-green-500/50',
       tags: [

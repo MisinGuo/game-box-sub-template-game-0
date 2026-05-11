@@ -180,7 +180,7 @@ export default function SearchClient({ locale }: SearchClientProps) {
     const section = article.sectionName || article.categoryName || ''
     const isReview = /评测|測評|review/i.test(section)
     const isTopic = /专题|專題|topic/i.test(section)
-    const base = isReview ? '/content/reviews' : isTopic ? '/content/topics' : '/content/guides'
+    const base = isReview ? '/content/reviews' : isTopic ? '/topics' : '/content/guides'
     return lp(`${base}/${slugOrId}`)
   }
 

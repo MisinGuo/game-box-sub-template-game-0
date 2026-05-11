@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { generateSitemapIndex, getSitemapChunkCount } from '@/lib/sitemap/generator'
 import { fetchUrlsByType, fetchStaticUrls } from '@/lib/sitemap/fetchers'
 import { sitemapConfig } from '@/config/sitemap/config'
-import { supportedLocales } from '@/config/site/locales'
+import { supportedLocales, type Locale } from '@/config/site/locales'
 import { getSecureHostname } from '@/lib/sitemap/security'
 import type { ContentType } from '@/lib/sitemap/types'
 
@@ -103,6 +103,17 @@ export async function GET(request: Request) {
       }
     })
     await Promise.all(tasks)
+
+    // 并行任务完成顺序不确定，排序保证输出稳定
+    const typeOrder = Object.keys(sitemapConfig.contentTypes) as ContentType[]
+    const localeOrder = supportedLocales
+    entries.sort((a, b) => {
+      const li = localeOrder.indexOf(a.locale as Locale) - localeOrder.indexOf(b.locale as Locale)
+      if (li !== 0) return li
+      const ti = typeOrder.indexOf(a.type) - typeOrder.indexOf(b.type)
+      if (ti !== 0) return ti
+      return a.chunk - b.chunk
+    })
 
     const maxLocPerIndex = 50000
     if (entries.length > maxLocPerIndex) {

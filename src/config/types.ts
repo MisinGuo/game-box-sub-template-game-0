@@ -142,7 +142,6 @@ export interface LocaleConfig {
     home: string
     articles: string
     categories: string
-    tags: string
     readMore: string
     readingTime: string
     download: string

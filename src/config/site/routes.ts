@@ -75,7 +75,7 @@ export const routes: RouteConfig[] = [
     showInNav: false,
   },
   {
-    path: '/content/topics',
+    path: '/topics',
     title: '专题',
     description: '游戏专题合集',
     enabled: true,

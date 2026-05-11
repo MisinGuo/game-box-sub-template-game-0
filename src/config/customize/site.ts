@@ -79,6 +79,7 @@ const siteConfigData: SiteConfigFile = {
       { path: '/rank', i18nKey: 'rank', label: '排行榜', enabled: true, inSitemap: true },
       { path: '/content', i18nKey: 'content', label: '内容中心', enabled: true, inSitemap: true },
       { path: '/news', i18nKey: 'news', label: '资讯', enabled: true, inSitemap: true },
+      { path: '/topics', i18nKey: 'topics', label: '专题合集', enabled: true, inSitemap: true },
     ],
   },
 

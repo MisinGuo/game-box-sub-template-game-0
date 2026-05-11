@@ -6,9 +6,7 @@ import { ArticleLayout } from '@/components/content/ArticleLayout'
 import { generateArticleJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
 import { getModuleConfig } from '@/config'
 import { isValidLocale, supportedLocales, defaultLocale, type Locale } from '@/config/site/locales'
-import { SiteSectionSlugGroups } from '@/config/pages/content'
 
-// 按需渲染 + ISR 缓存
 export const dynamic = 'auto'
 export const revalidate = 600
 
@@ -30,21 +28,15 @@ interface TopicDetail {
   locale?: string
 }
 
-function normalizeLocale(value?: string): string | undefined {
-  return value ? value.replace('_', '-') : undefined
-}
-
 const getTopicDetail = cache(async (id: string, locale: Locale): Promise<TopicDetail | null> => {
   try {
     const response = await ApiClient.getArticleDetail(parseInt(id, 10), locale)
-
     if (response.code === 200 && response.data) {
       return response.data
     }
   } catch (error) {
     console.error(`获取专题 ${id} 失败:`, error)
   }
-
   return null
 })
 
@@ -52,7 +44,7 @@ const getAvailableTopicLocales = cache(async (id: string): Promise<Locale[]> => 
   try {
     const response = await ApiClient.getArticleLocales(parseInt(id, 10))
     if (response.code === 200 && Array.isArray(response.data)) {
-      const available = response.data.filter((l: string) => 
+      const available = response.data.filter((l: string) =>
         supportedLocales.includes(l as any)
       ) as Locale[]
       return available.length > 0 ? available : [defaultLocale]
@@ -69,10 +61,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>
 }): Promise<Metadata> {
   const { locale: localeParam, slug } = await params
-
-  if (!isValidLocale(localeParam)) {
-    return {}
-  }
+  if (!isValidLocale(localeParam)) return {}
 
   const locale = localeParam as Locale
   const topic = await getTopicDetail(slug, locale)
@@ -83,20 +72,18 @@ export async function generateMetadata({
   }
 
   const topicUrl =
-    locale === defaultLocale
-      ? `/content/topics/${slug}`
-      : `/${locale}/content/topics/${slug}`
+    locale === defaultLocale ? `/topics/${slug}` : `/${locale}/topics/${slug}`
   const description = topic.description || topic.title
   const imageUrl = topic.coverImage || '/default-og-image.jpg'
-  const titleSuffix = locale === 'zh-TW' ? ' | 遊戲專題' : locale === 'en-US' ? ' | Game Topics' : ' | 游戏专题'
-  const siteNameStr = locale === 'zh-TW' ? '遊戲專題' : locale === 'en-US' ? 'Game Topics' : '游戏专题'
+  const titleSuffix =
+    locale === 'zh-TW' ? ' | 遊戲專題' : locale === 'en-US' ? ' | Game Topics' : ' | 游戏专题'
 
   const languages: Record<string, string> = {}
   if (availableLocales.length > 1) {
     availableLocales.forEach(l => {
-      languages[l] = l === defaultLocale ? `/content/topics/${slug}` : `/${l}/content/topics/${slug}`
+      languages[l] = l === defaultLocale ? `/topics/${slug}` : `/${l}/topics/${slug}`
     })
-    languages['x-default'] = `/content/topics/${slug}`
+    languages['x-default'] = `/topics/${slug}`
   }
 
   return {
@@ -108,13 +95,11 @@ export async function generateMetadata({
       title: topic.title,
       description,
       url: topicUrl,
-      siteName: siteNameStr,
+      siteName: locale === 'zh-TW' ? '遊戲專題' : locale === 'en-US' ? 'Game Topics' : '游戏专题',
       locale,
       type: 'article',
       publishedTime: topic.createTime,
       modifiedTime: topic.updateTime,
-      authors: topic.author ? [topic.author] : undefined,
-      tags: topic.tags,
       images: [{ url: imageUrl, width: 1200, height: 630, alt: topic.title }],
     },
     twitter: {
@@ -139,19 +124,12 @@ function ArticleContentSkeleton() {
         </div>
       </div>
       <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-2 mb-4">
-          <div className="h-6 w-16 bg-muted rounded-full animate-pulse" />
-        </div>
         <div className="h-9 w-3/4 bg-muted rounded animate-pulse mb-3" />
         <div className="h-5 w-1/3 bg-muted rounded animate-pulse mb-6" />
-        <div className="h-px bg-muted mb-6" />
         <div className="space-y-3">
-          <div className="h-4 w-full bg-muted rounded animate-pulse" />
-          <div className="h-4 w-5/6 bg-muted rounded animate-pulse" />
-          <div className="h-4 w-full bg-muted rounded animate-pulse" />
-          <div className="h-4 w-4/5 bg-muted rounded animate-pulse" />
-          <div className="h-4 w-full bg-muted rounded animate-pulse" />
-          <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-4 w-full bg-muted rounded animate-pulse" />
+          ))}
         </div>
       </div>
     </div>
@@ -164,10 +142,7 @@ export default async function TopicDetailPage({
   params: Promise<{ locale: string; slug: string }>
 }) {
   const { locale: localeParam, slug } = await params
-
-  if (!isValidLocale(localeParam)) {
-    notFound()
-  }
+  if (!isValidLocale(localeParam)) notFound()
 
   const locale = localeParam as Locale
 
@@ -184,12 +159,10 @@ async function TopicArticleContent({ slug, locale }: { slug: string; locale: Loc
     getAvailableTopicLocales(slug),
   ])
 
-  if (!topic) {
-    notFound()
-  }
+  if (!topic) notFound()
 
-  const categoryHref = locale === defaultLocale ? '/content/topics' : `/${locale}/content/topics`
-  const topicUrl = locale === defaultLocale ? `/content/topics/${slug}` : `/${locale}/content/topics/${slug}`
+  const categoryHref = locale === defaultLocale ? '/topics' : `/${locale}/topics`
+  const topicUrl = locale === defaultLocale ? `/topics/${slug}` : `/${locale}/topics/${slug}`
 
   return (
     <>
@@ -212,9 +185,14 @@ async function TopicArticleContent({ slug, locale }: { slug: string; locale: Loc
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(generateBreadcrumbJsonLd([
-            { name: locale === 'zh-TW' ? '首頁' : locale === 'en-US' ? 'Home' : '首页', url: locale === defaultLocale ? '/' : `/${locale}` },
-            { name: locale === 'zh-TW' ? '內容中心' : locale === 'en-US' ? 'Content' : '内容中心', url: locale === defaultLocale ? '/content' : `/${locale}/content` },
-            { name: locale === 'zh-TW' ? '專題' : locale === 'en-US' ? 'Topics' : '专题', url: locale === defaultLocale ? '/content/topics' : `/${locale}/content/topics` },
+            {
+              name: locale === 'zh-TW' ? '首頁' : locale === 'en-US' ? 'Home' : '首页',
+              url: locale === defaultLocale ? '/' : `/${locale}`,
+            },
+            {
+              name: locale === 'zh-TW' ? '專題合集' : locale === 'en-US' ? 'Topics' : '专题合集',
+              url: locale === defaultLocale ? '/topics' : `/${locale}/topics`,
+            },
             { name: topic.title, url: topicUrl },
           ])),
         }}
@@ -227,7 +205,9 @@ async function TopicArticleContent({ slug, locale }: { slug: string; locale: Loc
           date: topic.createTime,
           author: topic.author,
           tags: topic.tags,
-          category: topic.categoryName || (locale === 'zh-TW' ? '專題' : locale === 'en-US' ? 'Topic' : '专题'),
+          category:
+            topic.categoryName ||
+            (locale === 'zh-TW' ? '專題' : locale === 'en-US' ? 'Topic' : '专题'),
         }}
         content={topic.content}
         readingTime={Math.ceil(topic.content.length / 500)}

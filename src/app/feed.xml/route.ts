@@ -47,7 +47,7 @@ function getArticleUrl(article: Article): string {
       return `${siteConfig.hostname}/content/${category}/${article.masterArticleId}`
     }
   }
-  return `${siteConfig.hostname}/content/topics/${article.masterArticleId}`
+  return `${siteConfig.hostname}/topics/${article.masterArticleId}`
 }
 
 export async function GET() {
