@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { Noto_Sans_SC } from 'next/font/google'
 import { Suspense } from 'react'
+import NextTopLoader from 'nextjs-toploader'
 import './globals.css'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
@@ -100,6 +101,12 @@ export default async function RootLayout({
         <link rel="alternate" type="application/rss+xml" title={siteConfig.name} href="/feed.xml" />
       </head>
       <body className={`${notoSansSC.variable} min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans`}>
+        <NextTopLoader
+          color="var(--color-primary, #8b5cf6)"
+          showSpinner={false}
+          height={2}
+          shadow={false}
+        />
         <LocaleProvider>
           <Header />
           <main className="flex-1">
