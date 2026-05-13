@@ -55,6 +55,8 @@ const siteConfigData: SiteConfigFile = {
   },
 
   site: {
+    /** 对应后台 gb_sites.id */
+    siteId: 1,
     hostname: 'https://www.5awyx.com',
     jumpDomain: 'https://www.5awyx.com',
     defaultLocale: 'zh-CN',

@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ExternalLink, Download, Globe, Sparkles, Gift } from 'lucide-react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { trackOutboundClick, resolvePageMeta } from '@/lib/tracker'
 
 /**
  * promotionLinks JSON 结构示例：
@@ -147,6 +149,18 @@ function extractLinks(promoLinks: PromotionLinks | null): { label: string; url: 
 
 export default function GameBoxes({ boxes, locale, defaultLocale }: GameBoxesProps) {
   if (!boxes || boxes.length === 0) return null
+
+  const pathname = usePathname()
+  const pageMeta = resolvePageMeta(pathname)
+
+  function handleOutboundClick(targetUrl: string) {
+    trackOutboundClick(targetUrl, {
+      pageType: pageMeta.pageType,
+      contentSlug: pageMeta.contentSlug,
+      locale,
+      pagePath: pathname,
+    })
+  }
 
   const localePath = (path: string) =>
     locale === defaultLocale ? path : `/${locale}${path}`
@@ -312,7 +326,7 @@ export default function GameBoxes({ boxes, locale, defaultLocale }: GameBoxesPro
                         className="bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-xs h-7"
                         asChild
                       >
-                        <a href={mainDownloadUrl} target="_blank" rel="noopener noreferrer">
+                        <a href={mainDownloadUrl} target="_blank" rel="sponsored noopener noreferrer" onClick={() => handleOutboundClick(mainDownloadUrl)}>
                           <Download className="h-3 w-3 mr-1" /> 下载游戏
                         </a>
                       </Button>
@@ -330,7 +344,7 @@ export default function GameBoxes({ boxes, locale, defaultLocale }: GameBoxesPro
                           className="border-slate-600 text-slate-300 hover:text-white text-xs h-7"
                           asChild
                         >
-                          <a href={link.url} target="_blank" rel="noopener noreferrer">
+                          <a href={link.url} target="_blank" rel="sponsored noopener noreferrer" onClick={() => handleOutboundClick(link.url)}>
                             <ExternalLink className="h-3 w-3 mr-1" /> {link.label}
                           </a>
                         </Button>
@@ -344,7 +358,7 @@ export default function GameBoxes({ boxes, locale, defaultLocale }: GameBoxesPro
                         className="border-slate-600 text-slate-300 hover:text-white text-xs h-7"
                         asChild
                       >
-                        <a href={box.promoteUrl} target="_blank" rel="noopener noreferrer">
+                        <a href={box.promoteUrl} target="_blank" rel="sponsored noopener noreferrer" onClick={() => handleOutboundClick(box.promoteUrl!)}>
                           <ExternalLink className="h-3 w-3 mr-1" /> 推广页
                         </a>
                       </Button>

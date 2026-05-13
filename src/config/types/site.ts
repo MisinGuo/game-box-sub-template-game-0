@@ -20,6 +20,8 @@ export interface SiteConfigBranding {
 }
 
 export interface SiteConfigSite {
+  /** 对应后台 gb_sites.id，用于行为数据上报 */
+  siteId: number
   hostname: string
   mainSiteUrl?: string
   jumpDomain: string

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { ChevronRight, Calendar, Clock, BookOpen, PanelRightClose, PanelRightOpen, List, Pin, PinOff, GripHorizontal } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { defaultLocale } from '@/config/site/locales'
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import MarkdownRenderer from './MarkdownRenderer'
 import { DownloadBox, BackToListButton } from './DownloadBox'
+import { trackOutboundClick, resolvePageMeta } from '@/lib/tracker'
 import type { ModuleConfig } from '@/config'
 import type { Locale } from '@/config/types'
 
@@ -21,6 +23,7 @@ interface ArticleFrontmatter {
   date?: string
   category?: string
   tags?: string[]
+  relatedGames?: { gameId: number; gameName: string }[]
   [key: string]: any
 }
 
@@ -52,6 +55,18 @@ export function ArticleLayout({
   const { theme, articleDetail, sidebar, downloadEntry } = config
 
   const { locale, setAvailableLocales } = useLocale()
+  const pathname = usePathname()
+  const pageMeta = resolvePageMeta(pathname)
+
+  function handleBoxClick(targetUrl: string) {
+    trackOutboundClick(targetUrl, {
+      pageType: pageMeta.pageType,
+      contentSlug: pageMeta.contentSlug,
+      locale,
+      pagePath: pathname,
+    })
+  }
+
   const lp = (path: string) => locale === defaultLocale ? path : `/${locale}${path}`
   const moduleTitle = locale === 'en-US'
     ? (config.type === 'news' ? 'News' : 'Content Center')

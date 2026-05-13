@@ -10,6 +10,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { NavigationTracker } from '@/components/common/NavigationTracker'
 import { WebVitals } from '@/components/common/WebVitals'
+import { BehaviorTracker } from '@/components/common/BehaviorTracker'
 import { siteConfig } from '@/config'
 import { backendConfig } from '@/config/api/backend'
 import { buildThemeCSSVars, siteTheme } from '@/lib/site-config'
@@ -118,6 +119,9 @@ export default async function RootLayout({
             <NavigationTracker />
           </Suspense>
           <WebVitals />
+          <Suspense fallback={null}>
+            <BehaviorTracker />
+          </Suspense>
         </LocaleProvider>
       </body>
     </html>
