@@ -75,11 +75,12 @@ export async function POST(req: NextRequest) {
     const referer = req.headers.get('referer')
     const ua = req.headers.get('user-agent')
     const countryCode = req.headers.get('cf-ipcountry') || null
-    const ipAddress = (
+    // 请求经过国内 nginx 代理转发时，X-Real-Visitor-IP 包含代理透传的真实用户 IP；
+    // 直连 CF Workers 时，读 CF-Connecting-IP
+    const ipAddress =
+      req.headers.get('x-real-visitor-ip') ||
       req.headers.get('cf-connecting-ip') ||
-      (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
       null
-    )
 
     const { referrerType, referrerEngine, searchKeyword } = parseReferrer(referer)
     const uaCategory = parseUaCategory(ua)
