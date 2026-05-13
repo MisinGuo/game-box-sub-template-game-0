@@ -6,7 +6,7 @@ import {
   getSitemapChunkCount,
   sliceUrlsByChunk,
 } from '@/lib/sitemap/generator'
-import { fetchUrlsByType, fetchGameUrlsByChunk, getGameSitemapChunkCount } from '@/lib/sitemap/fetchers'
+import { fetchUrlsByType, fetchGameUrlsByChunk, getGameSitemapChunkCount, fetchStaticUrls } from '@/lib/sitemap/fetchers'
 import { getSecureHostname } from '@/lib/sitemap/security'
 import type { ContentType } from '@/lib/sitemap/types'
 import { sitemapConfig } from '@/config/sitemap/config'
@@ -74,9 +74,16 @@ export async function GET(
 
       const typeChunkCounts = await Promise.all(
         validTypes.map(async (type) => {
-          const chunkCount = type === 'games'
-            ? await getGameSitemapChunkCount(locale)
-            : getSitemapChunkCount((await fetchUrlsByType(locale, type, hostname)).length)
+          if (type === 'games') {
+            return { type, chunkCount: await getGameSitemapChunkCount(locale) }
+          }
+          if (type === 'static') {
+            // fetchStaticUrls 只读本地路径配置，无 API 请求；
+            // 避免 fetchUrlsByType('static') 内部重复抓取 guides/reviews/news
+            const urls = await fetchStaticUrls(locale, hostname)
+            return { type, chunkCount: getSitemapChunkCount(urls.length) }
+          }
+          const chunkCount = getSitemapChunkCount((await fetchUrlsByType(locale, type, hostname)).length)
           return { type, chunkCount }
         })
       )

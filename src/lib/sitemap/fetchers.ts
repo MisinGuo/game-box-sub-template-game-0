@@ -1,7 +1,7 @@
 import ApiClient from '@/lib/api'
 import type { SitemapUrl, ContentType } from './types'
 import { sitemapConfig } from '@/config/sitemap/config'
-import { generateAlternateUrls } from './generator'
+import { generateAlternateUrls, getSitemapChunkCount } from './generator'
 import { defaultLocale } from '@/config/site/locales'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
 import { getEnabledRoutes } from '@/config/site/routes'
@@ -883,5 +883,61 @@ export async function fetchUrlsByType(
       return fetchNewsUrls(locale, hostname)
     default:
       return []
+  }
+}
+
+/**
+ * 轻量：仅估算指定类型的分片数，不加载完整 URL 列表
+ * 供主 sitemap 索引（/sitemap.xml）使用，避免触发重型数据加载
+ */
+export async function getTypeSitemapChunkCountLight(locale: string, type: ContentType): Promise<number> {
+  try {
+    switch (type) {
+      case 'games':
+        return getGameSitemapChunkCountForIndex(locale)
+      case 'static':
+        return getSitemapChunkCount(getStaticPaths().length)
+      case 'boxes': {
+        const resp = await ApiClient.getBoxes({ locale: locale as any, pageNum: 1, pageSize: 1 })
+        const total = normalizeCount(extractTotalCount(resp))
+        // 每个盒子含 detail + download 两条 URL
+        return getSitemapChunkCount(total * 2)
+      }
+      case 'guides': {
+        const resp = await ApiClient.getArticles({
+          locale: locale as any,
+          pageNum: 1,
+          pageSize: 1,
+          sections: (SiteSectionSlugGroups.guides as readonly string[]).join(','),
+        })
+        return getSitemapChunkCount(normalizeCount(extractTotalCount(resp)))
+      }
+      case 'reviews': {
+        const resp = await ApiClient.getArticles({
+          locale: locale as any,
+          pageNum: 1,
+          pageSize: 1,
+          sections: (SiteSectionSlugGroups.reviews as readonly string[]).join(','),
+        })
+        return getSitemapChunkCount(normalizeCount(extractTotalCount(resp)))
+      }
+      case 'news': {
+        const resp = await ApiClient.getArticles({
+          locale: locale as any,
+          pageNum: 1,
+          pageSize: 1,
+          sections: (SiteSectionSlugGroups.news as readonly string[]).join(','),
+        })
+        return getSitemapChunkCount(normalizeCount(extractTotalCount(resp)))
+      }
+      case 'topics': {
+        const resp = await ApiClient.getTopics({ locale, pageNum: 1, pageSize: 1 })
+        return getSitemapChunkCount(normalizeCount(extractTotalCount(resp)))
+      }
+      default:
+        return 1
+    }
+  } catch {
+    return 1
   }
 }
