@@ -190,10 +190,15 @@ server {
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_set_header X-Forwarded-Host \$host;
-        # 透传真实用户 IP：Cloudflare 在到达 VPS 时已写入 CF-Connecting-IP，
-        # 但请求再转到源站 CF Workers 时，源站 CF 会用 VPS IP 覆盖该头，
-        # 因此用自定义头 X-Real-Visitor-IP 保留原始用户 IP。
-        proxy_set_header X-Real-Visitor-IP \$http_cf_connecting_ip;
+        # 透传真实用户 IP：
+        # - 若 VPS 前无 Cloudflare（灰云），$remote_addr = 真实用户 IP
+        # - 若 VPS 前有 Cloudflare（橙云），CF-Connecting-IP = 真实用户 IP
+        # 默认用 $remote_addr，有 CF-Connecting-IP 时覆盖
+        set \$real_visitor_ip \$remote_addr;
+        if (\$http_cf_connecting_ip != "") {
+            set \$real_visitor_ip \$http_cf_connecting_ip;
+        }
+        proxy_set_header X-Real-Visitor-IP \$real_visitor_ip;
         # 关闭上游压缩，保证 sub_filter 可对响应正文进行替换
         proxy_set_header Accept-Encoding "";
 
