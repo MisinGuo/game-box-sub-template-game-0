@@ -56,41 +56,23 @@ function parseUaCategory(ua: string | null): string {
   return 'desktop'
 }
 
-/** 解析前端 IP：用户的真实 IP
- *  VPS nginx 反代场景：cf-connecting-ip 为 VPS 出口 IP（不可靠），
- *  但 x-forwarded-for 的第一个条目是 nginx 透传的原始客户端 IP（用户真实 IP）
- *  用户直连 CF Workers 场景：cf-connecting-ip 为用户真实 IP
- *  注意：x-real-ip 是 CF 边缘节点 IP（代理IP），不应作为用户真实 IP
- */
-function resolveFrontendIp(req: NextRequest): string | null {
-  // 优先 x-forwarded-for：VPS 反代场景下第一个条目是用户真实 IP
+/** 提取 IP 相关 header，不做优先级判断，原样传给后端由后端决定存储 */
+function extractIpHeaders(req: NextRequest) {
   const xff = req.headers.get('x-forwarded-for')
-  if (xff) {
-    const first = xff.split(',')[0].trim()
-    if (first) return first
-  }
-  // 直连 CF Workers 场景：cf-connecting-ip 为用户真实 IP
   const cfIp = req.headers.get('cf-connecting-ip')
-  if (cfIp) return cfIp.trim() || null
-  return null
-}
-
-/** 解析后端 IP：fetch 请求到达 VPS nginx 时，nginx 在 X-Real-Visitor-IP 中写入的真实用户 IP
- *  用户请求到达 CF Workers 时此 header 不存在，返回 null 让 Java 后端自行从请求头解析
- */
-function resolveBackendIp(req: NextRequest): string | null {
-  const realVisitorIp = req.headers.get('x-real-visitor-ip')
-  if (realVisitorIp) return realVisitorIp.split(',')[0].trim() || null
-  return null
-}
-
-/** 解析代理 IP：VPS nginx 反代到 CF Workers 时设置 X-Real-IP = $remote_addr（即 CF Workers 出口 IP）
- *  用于识别请求打到了哪台 VPS；用户直连 CF Workers 时此 header 不存在，返回 null
- */
-function resolveProxyIp(req: NextRequest): string | null {
   const realIp = req.headers.get('x-real-ip')
-  if (realIp) return realIp.trim() || null
-  return null
+  const realVisitorIp = req.headers.get('x-real-visitor-ip')
+  return {
+    ipAddressFrontend: xff ? xff.split(',')[0].trim() : null,  // x-forwarded-for[0]
+    ipAddressBackend:  realVisitorIp ? realVisitorIp.split(',')[0].trim() : null, // x-real-visitor-ip
+    ipAddressProxy:    realIp ? realIp.trim() : null,  // x-real-ip
+    ipHeaders: {
+      'x-forwarded-for':    xff || null,
+      'cf-connecting-ip':   cfIp || null,
+      'x-real-ip':          realIp || null,
+      'x-real-visitor-ip':  realVisitorIp || null,
+    },
+  }
 }
 
 /** 获取或创建匿名 session_id（SHA-256 散列后存 Cookie） */
@@ -112,12 +94,7 @@ export async function POST(req: NextRequest) {
     const referer = req.headers.get('referer')
     const ua = req.headers.get('user-agent')
     const countryCode = req.headers.get('cf-ipcountry') || null
-    // 前端 IP：请求打到 VPS 时使用的 IP（x-real-ip = CF 边缘节点 IP）
-    // 后端 IP：nginx 在 X-Real-Visitor-IP 中写入的用户真实 IP（用户请求到达 CF Workers 时不存在，为 null）
-    // 代理 IP：VPS nginx X-Real-IP = $remote_addr（CF Workers 出口 IP），用户直连时为 null
-    const ipFrontend = resolveFrontendIp(req)
-    const ipBackend = resolveBackendIp(req)
-    const ipProxy = resolveProxyIp(req)
+    const ipInfo = extractIpHeaders(req)
 
     const { referrerType, referrerEngine, searchKeyword } = parseReferrer(referer)
     const uaCategory = parseUaCategory(ua)
@@ -151,9 +128,7 @@ export async function POST(req: NextRequest) {
       utmCampaign,
       uaCategory,
       countryCode,
-      ipAddressFrontend: ipFrontend,
-      ipAddressBackend: ipBackend,
-      ipAddressProxy: ipProxy,
+      ...ipInfo,
       viewportWidth: body.viewportWidth || null,
     }
 
