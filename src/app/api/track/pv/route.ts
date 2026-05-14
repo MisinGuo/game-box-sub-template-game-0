@@ -56,22 +56,27 @@ function parseUaCategory(ua: string | null): string {
   return 'desktop'
 }
 
-/** 提取 IP 相关 header，不做优先级判断，原样传给后端由后端决定存储 */
+/** 提取 IP 相关 header，按新规则确定前端/后端/代理 IP */
+function parseFirstIp(value: string | null): string | null {
+  return value ? value.split(',')[0].trim() : null
+}
+
 function extractIpHeaders(req: NextRequest) {
-  const xff = req.headers.get('x-forwarded-for')
-  const cfIp = req.headers.get('cf-connecting-ip')
-  const realIp = req.headers.get('x-real-ip')
-  const realVisitorIp = req.headers.get('x-real-visitor-ip')
+  const xff = parseFirstIp(req.headers.get('x-forwarded-for'))
+  const cfIp = parseFirstIp(req.headers.get('cf-connecting-ip'))
+  const realIp = parseFirstIp(req.headers.get('x-real-ip'))
+  const realVisitorIp = parseFirstIp(req.headers.get('x-real-visitor-ip'))
+  const socketRemoteAddress = (req as any).socket?.remoteAddress || null
+
+  const ipAddressFrontend = socketRemoteAddress || null
+  const ipAddressBackend = realVisitorIp || cfIp || xff || null
+  const ipAddressProxy = realVisitorIp ? cfIp || null : realIp || null
+
   return {
-    ipAddressFrontend: xff ? xff.split(',')[0].trim() : null,  // x-forwarded-for[0]
-    ipAddressBackend:  realVisitorIp ? realVisitorIp.split(',')[0].trim() : null, // x-real-visitor-ip
-    ipAddressProxy:    realIp ? realIp.trim() : null,  // x-real-ip
-    ipHeaders: JSON.stringify({
-      'x-forwarded-for':    xff || null,
-      'cf-connecting-ip':   cfIp || null,
-      'x-real-ip':          realIp || null,
-      'x-real-visitor-ip':  realVisitorIp || null,
-    }),
+    ipAddressFrontend,
+    ipAddressBackend,
+    ipAddressProxy,
+    ipHeaders: JSON.stringify(Object.fromEntries(req.headers.entries())),
   }
 }
 
