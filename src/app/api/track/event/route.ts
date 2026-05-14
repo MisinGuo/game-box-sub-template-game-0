@@ -5,6 +5,21 @@ import siteConfig from '@/config/customize/site'
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 const SITE_ID = siteConfig.site.siteId
 
+/** 解析前端 IP：客户端请求打到 VPS 时使用的 IP（CF 边缘节点 IP）
+ *  VPS nginx 反代到 CF Workers 时设置 X-Real-IP = $remote_addr（即 CF 边缘节点 IP）
+ *  注意：cf-connecting-ip 在此链路下是 VPS IP（请求由 VPS nginx 发起），不可靠
+ */
+function resolveFrontendIp(req: NextRequest): string | null {
+  const realIp = req.headers.get('x-real-ip')
+  if (realIp) return realIp.trim() || null
+  // fallback: 用户直连 CF Workers 时 cf-connecting-ip 为用户真实 IP
+  const cfIp = req.headers.get('cf-connecting-ip')
+  if (cfIp) return cfIp.trim() || null
+  const xff = req.headers.get('x-forwarded-for')
+  if (xff) return xff.split(',')[0].trim() || null
+  return null
+}
+
 /** 解析后端 IP：fetch 请求到达 VPS nginx 时，nginx 在 X-Real-Visitor-IP 中写入的真实用户 IP
  *  用户请求到达 CF Workers 时此 header 不存在，返回 null 让 Java 后端自行从请求头解析
  */
@@ -29,9 +44,10 @@ export async function POST(req: NextRequest) {
 
     const cookieStore = cookies()
     const sessionId = cookieStore.get('_sb_sid')?.value || null
-    // 前端 IP：由 Java 后端从 request.getRemoteAddr() 自行解析（即 CF Workers 出口 IP）
+    // 前端 IP：请求打到 VPS 时使用的 IP（x-real-ip = CF 边缘节点 IP）
     // 后端 IP：nginx 在 X-Real-Visitor-IP 中写入的用户真实 IP（用户请求到达 CF Workers 时不存在，为 null）
     // 代理 IP：VPS nginx X-Real-IP = $remote_addr（CF Workers 出口 IP），用户直连时为 null
+    const ipFrontend = resolveFrontendIp(req)
     const ipBackend = resolveBackendIp(req)
     const ipProxy = resolveProxyIp(req)
 
@@ -46,6 +62,7 @@ export async function POST(req: NextRequest) {
       targetUrl: body.targetUrl || null,
       scrollDepth: body.scrollDepth != null ? Number(body.scrollDepth) : null,
       timeOnPage: body.timeOnPage != null ? Number(body.timeOnPage) : null,
+      ipAddressFrontend: ipFrontend,
       ipAddressBackend: ipBackend,
       ipAddressProxy: ipProxy,
     }
