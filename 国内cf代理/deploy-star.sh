@@ -185,8 +185,8 @@ server {
         proxy_ssl_server_name on;
         proxy_ssl_name $O;
 
-        # [修复] Host 改为公开域名，避免源站 canonical/sitemap 暴露 origin 域名影响 SEO
-        proxy_set_header Host \$host;
+        # [撤销修复] Host 改为公开域名，避免源站 canonical/sitemap 暴露 origin 域名影响 SEO
+        proxy_set_header Host $O;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;

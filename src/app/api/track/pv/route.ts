@@ -66,12 +66,12 @@ function extractIpHeaders(req: NextRequest) {
     ipAddressFrontend: xff ? xff.split(',')[0].trim() : null,  // x-forwarded-for[0]
     ipAddressBackend:  realVisitorIp ? realVisitorIp.split(',')[0].trim() : null, // x-real-visitor-ip
     ipAddressProxy:    realIp ? realIp.trim() : null,  // x-real-ip
-    ipHeaders: {
+    ipHeaders: JSON.stringify({
       'x-forwarded-for':    xff || null,
       'cf-connecting-ip':   cfIp || null,
       'x-real-ip':          realIp || null,
       'x-real-visitor-ip':  realVisitorIp || null,
-    },
+    }),
   }
 }
 
