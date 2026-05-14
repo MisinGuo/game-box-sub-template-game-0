@@ -56,6 +56,7 @@ function parseUaCategory(ua: string | null): string {
   return 'desktop'
 }
 
+/** 解析前端 IP（由 Next.js 层从请求头提取，仅供参考；后端 IP 由 Java controller 独立解析更可靠） */
 function resolveClientIp(req: NextRequest): string | null {
   const candidate =
     req.headers.get('x-forwarded-for') ||
@@ -86,8 +87,8 @@ export async function POST(req: NextRequest) {
     const referer = req.headers.get('referer')
     const ua = req.headers.get('user-agent')
     const countryCode = req.headers.get('cf-ipcountry') || null
-    // 请求经过国内 nginx 代理转发时，X-Real-Visitor-IP 包含代理透传的真实用户 IP；
-    // 直连 CF Workers 时，读 CF-Connecting-IP；优先使用X-Forwarded-For或X-Real-IP
+    // 前端 IP：由 Next.js 层从请求头提取，可能被伪造，仅供参考；
+    // 后端 IP：由 Java controller 独立解析，经过代理层（nginx/CF）过滤透传，更可靠
     const ipAddress = resolveClientIp(req)
 
     const { referrerType, referrerEngine, searchKeyword } = parseReferrer(referer)
@@ -122,7 +123,7 @@ export async function POST(req: NextRequest) {
       utmCampaign,
       uaCategory,
       countryCode,
-      ipAddress,
+      ipAddressFrontend: ipAddress,
       viewportWidth: body.viewportWidth || null,
     }
 
