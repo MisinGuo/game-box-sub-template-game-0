@@ -77,6 +77,15 @@ function resolveBackendIp(req: NextRequest): string | null {
   return null
 }
 
+/** 解析代理 IP：nginx X-Real-IP = $remote_addr，即 CF Workers 出口 IP
+ *  用于识别请求打到了哪台 VPS；用户请求到达 CF Workers 时此 header 不存在
+ */
+function resolveProxyIp(req: NextRequest): string | null {
+  const realIp = req.headers.get('x-real-ip')
+  if (realIp) return realIp.trim() || null
+  return null
+}
+
 /** 获取或创建匿名 session_id（SHA-256 散列后存 Cookie） */
 async function getSessionId(req: NextRequest): Promise<{ sessionId: string; isNew: boolean }> {
   const cookieStore = cookies()
@@ -98,8 +107,10 @@ export async function POST(req: NextRequest) {
     const countryCode = req.headers.get('cf-ipcountry') || null
     // 前端 IP：CF 提供的用户真实 IP（cf-connecting-ip / x-forwarded-for）
     // 后端 IP：nginx 在 X-Real-Visitor-IP 中写入的 IP（用户请求到达 CF Workers 时不存在，为 null）
+    // 代理 IP：nginx X-Real-IP = $remote_addr，即 CF Workers 出口 IP（用户请求到达 CF Workers 时不存在，为 null）
     const ipFrontend = resolveFrontendIp(req)
     const ipBackend = resolveBackendIp(req)
+    const ipProxy = resolveProxyIp(req)
 
     const { referrerType, referrerEngine, searchKeyword } = parseReferrer(referer)
     const uaCategory = parseUaCategory(ua)
@@ -135,6 +146,7 @@ export async function POST(req: NextRequest) {
       countryCode,
       ipAddressFrontend: ipFrontend,
       ipAddressBackend: ipBackend,
+      ipAddressProxy: ipProxy,
       viewportWidth: body.viewportWidth || null,
     }
 

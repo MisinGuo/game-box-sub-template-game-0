@@ -26,6 +26,15 @@ function resolveBackendIp(req: NextRequest): string | null {
   return null
 }
 
+/** 解析代理 IP：nginx X-Real-IP = $remote_addr，即 CF Workers 出口 IP
+ *  用于识别请求打到了哪台 VPS；用户请求到达 CF Workers 时此 header 不存在
+ */
+function resolveProxyIp(req: NextRequest): string | null {
+  const realIp = req.headers.get('x-real-ip')
+  if (realIp) return realIp.trim() || null
+  return null
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -34,8 +43,10 @@ export async function POST(req: NextRequest) {
     const sessionId = cookieStore.get('_sb_sid')?.value || null
     // 前端 IP：CF 提供的用户真实 IP（cf-connecting-ip / x-forwarded-for）
     // 后端 IP：nginx 在 X-Real-Visitor-IP 中写入的 IP（用户请求到达 CF Workers 时不存在，为 null）
+    // 代理 IP：nginx X-Real-IP = $remote_addr，即 CF Workers 出口 IP（用户请求到达 CF Workers 时不存在，为 null）
     const ipFrontend = resolveFrontendIp(req)
     const ipBackend = resolveBackendIp(req)
+    const ipProxy = resolveProxyIp(req)
 
     const payload = {
       siteId: SITE_ID,
@@ -50,6 +61,7 @@ export async function POST(req: NextRequest) {
       timeOnPage: body.timeOnPage != null ? Number(body.timeOnPage) : null,
       ipAddressFrontend: ipFrontend,
       ipAddressBackend: ipBackend,
+      ipAddressProxy: ipProxy,
     }
 
     if (!payload.siteId || !payload.eventType) {
