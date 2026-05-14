@@ -185,20 +185,22 @@ server {
         proxy_ssl_server_name on;
         proxy_ssl_name $O;
 
-        proxy_set_header Host $O;
+        # [修复] Host 改为公开域名，避免源站 canonical/sitemap 暴露 origin 域名影响 SEO
+        proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_set_header X-Forwarded-Host \$host;
-        # 透传真实用户 IP：
-        # - 若 VPS 前无 Cloudflare（灰云），$remote_addr = 真实用户 IP
-        # - 若 VPS 前有 Cloudflare（橙云），CF-Connecting-IP = 真实用户 IP
-        # 默认用 $remote_addr，有 CF-Connecting-IP 时覆盖
+
+        # [修复] 先清除用户可能伪造的 X-Real-Visitor-IP，再由 Nginx 重新赋值
+        # 防止用户绕过 Cloudflare 直连 VPS 时注入伪造 IP
+        proxy_set_header X-Real-Visitor-IP "";
         set \$real_visitor_ip \$remote_addr;
         if (\$http_cf_connecting_ip != "") {
             set \$real_visitor_ip \$http_cf_connecting_ip;
         }
         proxy_set_header X-Real-Visitor-IP \$real_visitor_ip;
+
         # 关闭上游压缩，保证 sub_filter 可对响应正文进行替换
         proxy_set_header Accept-Encoding "";
 
