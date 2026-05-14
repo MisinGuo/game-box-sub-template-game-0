@@ -56,6 +56,17 @@ function parseUaCategory(ua: string | null): string {
   return 'desktop'
 }
 
+function resolveClientIp(req: NextRequest): string | null {
+  const candidate =
+    req.headers.get('x-forwarded-for') ||
+    req.headers.get('x-real-ip') ||
+    req.headers.get('x-real-visitor-ip') ||
+    req.headers.get('cf-connecting-ip') ||
+    null
+  if (!candidate) return null
+  return candidate.split(',')[0].trim() || null
+}
+
 /** 获取或创建匿名 session_id（SHA-256 散列后存 Cookie） */
 async function getSessionId(req: NextRequest): Promise<{ sessionId: string; isNew: boolean }> {
   const cookieStore = cookies()
@@ -76,11 +87,8 @@ export async function POST(req: NextRequest) {
     const ua = req.headers.get('user-agent')
     const countryCode = req.headers.get('cf-ipcountry') || null
     // 请求经过国内 nginx 代理转发时，X-Real-Visitor-IP 包含代理透传的真实用户 IP；
-    // 直连 CF Workers 时，读 CF-Connecting-IP
-    const ipAddress =
-      req.headers.get('x-real-visitor-ip') ||
-      req.headers.get('cf-connecting-ip') ||
-      null
+    // 直连 CF Workers 时，读 CF-Connecting-IP；优先使用X-Forwarded-For或X-Real-IP
+    const ipAddress = resolveClientIp(req)
 
     const { referrerType, referrerEngine, searchKeyword } = parseReferrer(referer)
     const uaCategory = parseUaCategory(ua)
