@@ -56,16 +56,22 @@ function parseUaCategory(ua: string | null): string {
   return 'desktop'
 }
 
-/** 解析前端 IP（Next.js 层从请求头提取，可能只是 VPS/CF 的 IP，仅供参考；后端 IP 由 Java controller 独立解析更可靠） */
-function resolveClientIp(req: NextRequest): string | null {
+/** 解析前端 IP：CF Workers 层从请求头提取，可能只是 VPS/CF 的 IP（不可靠） */
+function resolveFrontendIp(req: NextRequest): string | null {
   const candidate =
     req.headers.get('x-forwarded-for') ||
     req.headers.get('x-real-ip') ||
-    req.headers.get('x-real-visitor-ip') ||
     req.headers.get('cf-connecting-ip') ||
     null
   if (!candidate) return null
   return candidate.split(',')[0].trim() || null
+}
+
+/** 解析后端 IP：VPS nginx 在 X-Real-Visitor-IP 中写入的真实用户 IP（可靠），无则降级用前端 IP */
+function resolveBackendIp(req: NextRequest, frontendIp: string | null): string | null {
+  const realVisitorIp = req.headers.get('x-real-visitor-ip')
+  if (realVisitorIp) return realVisitorIp.split(',')[0].trim() || null
+  return frontendIp
 }
 
 /** 获取或创建匿名 session_id（SHA-256 散列后存 Cookie） */
@@ -87,9 +93,10 @@ export async function POST(req: NextRequest) {
     const referer = req.headers.get('referer')
     const ua = req.headers.get('user-agent')
     const countryCode = req.headers.get('cf-ipcountry') || null
-    // 前端 IP：Next.js 层解析，可能只是 VPS/CF 的 IP（不可靠）；
-    // 后端 IP：Java 从请求头解析，nginx 已在 X-Real-Visitor-IP 写入真实用户 IP（可靠）
-    const ipAddress = resolveClientIp(req)
+    // 前端 IP：CF Workers 层解析，可能只是 VPS/CF 的 IP（不可靠）
+    // 后端 IP：VPS nginx 在 X-Real-Visitor-IP 中写入的真实用户 IP（可靠），无则降级用前端 IP
+    const ipFrontend = resolveFrontendIp(req)
+    const ipBackend = resolveBackendIp(req, ipFrontend)
 
     const { referrerType, referrerEngine, searchKeyword } = parseReferrer(referer)
     const uaCategory = parseUaCategory(ua)
@@ -123,7 +130,8 @@ export async function POST(req: NextRequest) {
       utmCampaign,
       uaCategory,
       countryCode,
-      ipAddressFrontend: ipAddress,
+      ipAddressFrontend: ipFrontend,
+      ipAddressBackend: ipBackend,
       viewportWidth: body.viewportWidth || null,
     }
 
