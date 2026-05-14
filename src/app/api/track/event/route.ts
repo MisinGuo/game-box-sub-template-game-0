@@ -5,14 +5,13 @@ import siteConfig from '@/config/customize/site'
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 const SITE_ID = siteConfig.site.siteId
 
-/** 解析前端 IP：客户端请求打到 VPS 时使用的 IP（CF 边缘节点 IP）
- *  VPS nginx 反代到 CF Workers 时设置 X-Real-IP = $remote_addr（即 CF 边缘节点 IP）
- *  注意：cf-connecting-ip 在此链路下是 VPS IP（请求由 VPS nginx 发起），不可靠
+/** 解析前端 IP：用户的真实 IP
+ *  用户直连 CF Workers 时，cf-connecting-ip 为用户真实 IP
+ *  VPS nginx 反代到 CF Workers 时，cf-connecting-ip 不可靠（为 VPS IP），
+ *  但 x-forwarded-for 的第一个条目仍为 CF 边缘节点看到的用户 IP
+ *  注意：x-real-ip 是 CF 边缘节点 IP（代理IP），不应作为用户真实 IP
  */
 function resolveFrontendIp(req: NextRequest): string | null {
-  const realIp = req.headers.get('x-real-ip')
-  if (realIp) return realIp.trim() || null
-  // fallback: 用户直连 CF Workers 时 cf-connecting-ip 为用户真实 IP
   const cfIp = req.headers.get('cf-connecting-ip')
   if (cfIp) return cfIp.trim() || null
   const xff = req.headers.get('x-forwarded-for')
