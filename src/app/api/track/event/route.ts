@@ -5,7 +5,7 @@ import siteConfig from '@/config/customize/site'
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 const SITE_ID = siteConfig.site.siteId
 
-/** 解析前端 IP（由 Next.js 层从请求头提取，仅供参考；后端 IP 由 Java controller 独立解析更可靠） */
+/** 解析前端 IP（Next.js 层从请求头提取，可能只是 VPS/CF 的 IP，仅供参考；后端 IP 由 Java controller 独立解析更可靠） */
 function resolveClientIp(req: NextRequest): string | null {
   const candidate =
     req.headers.get('x-forwarded-for') ||
@@ -23,8 +23,8 @@ export async function POST(req: NextRequest) {
 
     const cookieStore = cookies()
     const sessionId = cookieStore.get('_sb_sid')?.value || null
-    // 前端 IP：由 Next.js 层从请求头提取，可能被伪造，仅供参考；
-    // 后端 IP：由 Java controller 独立解析，经过代理层（nginx/CF）过滤透传，更可靠
+    // 前端 IP：Next.js 层解析，可能只是 VPS/CF 的 IP（不可靠）；
+    // 后端 IP：Java 从请求头解析，nginx 已在 X-Real-Visitor-IP 写入真实用户 IP（可靠）
     const ipAddress = resolveClientIp(req)
 
     const payload = {
@@ -47,7 +47,14 @@ export async function POST(req: NextRequest) {
 
     await fetch(`${BACKEND_URL}/track/event`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // 转发代理头，让 Java 后端能读到 nginx 写入的真实用户 IP
+        ...(req.headers.get('x-real-visitor-ip') && { 'x-real-visitor-ip': req.headers.get('x-real-visitor-ip')! }),
+        ...(req.headers.get('cf-connecting-ip') && { 'cf-connecting-ip': req.headers.get('cf-connecting-ip')! }),
+        ...(req.headers.get('x-real-ip') && { 'x-real-ip': req.headers.get('x-real-ip')! }),
+        ...(req.headers.get('x-forwarded-for') && { 'x-forwarded-for': req.headers.get('x-forwarded-for')! }),
+      },
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(3000),
     }).catch(() => {
