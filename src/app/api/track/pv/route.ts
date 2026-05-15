@@ -6,6 +6,15 @@ import siteConfig from '@/config/customize/site'
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 const SITE_ID = siteConfig.site.siteId
 
+/** 采集完整的请求头并序列化为 JSON */
+function collectNextjsHeaders(req: NextRequest): string {
+  const headers: Record<string, string> = {}
+  req.headers.forEach((value, key) => {
+    headers[key] = value
+  })
+  return JSON.stringify(headers)
+}
+
 /** 从 Referer header 解析流量来源信息 */
 function parseReferrer(referer: string | null): {
   referrerType: string
@@ -93,6 +102,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 采集客户端发送到 Next.js 的完整请求头
+    const nextjsIpHeaders = collectNextjsHeaders(req)
+
     const payload = {
       siteId: SITE_ID,
       sessionId,
@@ -109,6 +121,7 @@ export async function POST(req: NextRequest) {
       uaCategory,
       countryCode,
       viewportWidth: body.viewportWidth || null,
+      nextjsIpHeaders, // 前端采集的完整请求头
     }
 
     if (!payload.siteId) {

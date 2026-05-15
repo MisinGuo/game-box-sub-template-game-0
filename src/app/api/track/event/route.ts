@@ -5,12 +5,24 @@ import siteConfig from '@/config/customize/site'
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 const SITE_ID = siteConfig.site.siteId
 
+/** 采集完整的请求头并序列化为 JSON */
+function collectNextjsHeaders(req: NextRequest): string {
+  const headers: Record<string, string> = {}
+  req.headers.forEach((value, key) => {
+    headers[key] = value
+  })
+  return JSON.stringify(headers)
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
     const cookieStore = cookies()
     const sessionId = cookieStore.get('_sb_sid')?.value || null
+
+    // 采集客户端发送到 Next.js 的完整请求头
+    const nextjsIpHeaders = collectNextjsHeaders(req)
 
     const payload = {
       siteId: SITE_ID,
@@ -23,6 +35,7 @@ export async function POST(req: NextRequest) {
       targetUrl: body.targetUrl || null,
       scrollDepth: body.scrollDepth != null ? Number(body.scrollDepth) : null,
       timeOnPage: body.timeOnPage != null ? Number(body.timeOnPage) : null,
+      nextjsIpHeaders, // 前端采集的完整请求头
     }
 
     if (!payload.siteId || !payload.eventType) {
