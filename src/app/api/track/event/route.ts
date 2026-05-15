@@ -21,6 +21,8 @@ export async function POST(req: NextRequest) {
     const cookieStore = cookies()
     const sessionId = cookieStore.get('_sb_sid')?.value || null
 
+    const countryCode = req.headers.get('cf-ipcountry') || null
+
     // 采集客户端发送到 Next.js 的完整请求头
     const nextjsIpHeaders = collectNextjsHeaders(req)
 
@@ -35,14 +37,16 @@ export async function POST(req: NextRequest) {
       targetUrl: body.targetUrl || null,
       scrollDepth: body.scrollDepth != null ? Number(body.scrollDepth) : null,
       timeOnPage: body.timeOnPage != null ? Number(body.timeOnPage) : null,
-      nextjsIpHeaders, // 前端采集的完整请求头
+      uaCategory: body.uaCategory || null,
+      countryCode,
+      nextjsIpHeaders,
     }
 
     if (!payload.siteId || !payload.eventType) {
       return new NextResponse(null, { status: 204 })
     }
 
-    await fetch(`${BACKEND_URL}/track/event`, {
+    const backendRes = await fetch(`${BACKEND_URL}/track/event`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -54,9 +58,11 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(3000),
-    }).catch(() => {
-      // 静默失败
     })
+
+    if (!backendRes.ok) {
+      console.warn('[track/event] backend returned', backendRes.status)
+    }
 
     return new NextResponse(null, { status: 204 })
   } catch {
