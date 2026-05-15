@@ -56,30 +56,6 @@ function parseUaCategory(ua: string | null): string {
   return 'desktop'
 }
 
-/** 提取 IP 相关 header，按新规则确定前端/后端/代理 IP */
-function parseFirstIp(value: string | null): string | null {
-  return value ? value.split(',')[0].trim() : null
-}
-
-function extractIpHeaders(req: NextRequest) {
-  const xff = parseFirstIp(req.headers.get('x-forwarded-for'))
-  const cfIp = parseFirstIp(req.headers.get('cf-connecting-ip'))
-  const realIp = parseFirstIp(req.headers.get('x-real-ip'))
-  const realVisitorIp = parseFirstIp(req.headers.get('x-real-visitor-ip'))
-  const socketRemoteAddress = (req as any).socket?.remoteAddress || null
-
-  const ipAddressFrontend = socketRemoteAddress || null
-  const ipAddressBackend = realVisitorIp || cfIp || xff || null
-  const ipAddressProxy = realVisitorIp ? cfIp || null : realIp || null
-
-  return {
-    ipAddressFrontend,
-    ipAddressBackend,
-    ipAddressProxy,
-    ipHeaders: JSON.stringify(Object.fromEntries(req.headers.entries())),
-  }
-}
-
 /** 获取或创建匿名 session_id（SHA-256 散列后存 Cookie） */
 async function getSessionId(req: NextRequest): Promise<{ sessionId: string; isNew: boolean }> {
   const cookieStore = cookies()
@@ -99,7 +75,6 @@ export async function POST(req: NextRequest) {
     const referer = req.headers.get('referer')
     const ua = req.headers.get('user-agent')
     const countryCode = req.headers.get('cf-ipcountry') || null
-    const ipInfo = extractIpHeaders(req)
 
     const { referrerType, referrerEngine, searchKeyword } = parseReferrer(referer)
     const uaCategory = parseUaCategory(ua)
@@ -133,7 +108,6 @@ export async function POST(req: NextRequest) {
       utmCampaign,
       uaCategory,
       countryCode,
-      ...ipInfo,
       viewportWidth: body.viewportWidth || null,
     }
 
@@ -145,7 +119,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // 转发代理头，让 Java 后端能读到 nginx 写入的真实用户 IP
+        // 转发代理头，由 Java 后端统一解析并落库
         ...(req.headers.get('x-real-visitor-ip') && { 'x-real-visitor-ip': req.headers.get('x-real-visitor-ip')! }),
         ...(req.headers.get('cf-connecting-ip') && { 'cf-connecting-ip': req.headers.get('cf-connecting-ip')! }),
         ...(req.headers.get('x-real-ip') && { 'x-real-ip': req.headers.get('x-real-ip')! }),
