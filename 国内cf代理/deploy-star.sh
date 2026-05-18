@@ -185,8 +185,10 @@ server {
         proxy_ssl_server_name on;
         proxy_ssl_name $O;
 
-        # [撤销修复] Host 改为公开域名，避免源站 canonical/sitemap 暴露 origin 域名影响 SEO
+        # Host 发送源站域名，让源站能正确路由
         proxy_set_header Host $O;
+        # 用 X-Forwarded-Host 告诉 NextJS 当前公开域名，用于 canonical/sitemap/og:url
+        proxy_set_header X-Forwarded-Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;

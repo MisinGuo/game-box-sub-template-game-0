@@ -11,6 +11,8 @@ import { generateListMetadata } from '@/lib/metadata'
 import { gamesListConfig } from '@/config/pages/games'
 import ApiClient from '@/lib/api'
 import { generateCollectionPageJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 import { siteConfig } from '@/config'
 
 export async function generateStaticParams() {
@@ -400,12 +402,14 @@ export default async function LocalizedGamesPage({
 
   const locale = localeParam as Locale
 
+  const publicOrigin = getPublicOrigin(await headers())
+
   const jsonLd = generateCollectionPageJsonLd({
     name: gamesListConfig.hero.title[locale],
     description: gamesListConfig.hero.description[locale],
     url: locale === defaultLocale ? '/games' : `/${locale}/games`,
     items: [],
-  })
+  }, publicOrigin)
 
   return (
     <div className="bg-slate-950 min-h-screen">

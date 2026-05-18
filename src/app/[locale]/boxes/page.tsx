@@ -8,6 +8,8 @@ import { generateListMetadata } from '@/lib/metadata'
 import { boxesListConfig } from '@/config/pages/boxes'
 import ApiClient from '@/lib/api'
 import { generateCollectionPageJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 import { siteConfig } from '@/config'
 
 export async function generateStaticParams() {
@@ -214,12 +216,14 @@ export default async function LocalizedBoxesPage({
 
   const locale = localeParam as Locale
 
+  const publicOrigin = getPublicOrigin(await headers())
+
   const jsonLd = generateCollectionPageJsonLd({
     name: boxesListConfig.hero.title[locale],
     description: boxesListConfig.hero.description[locale],
     url: locale === defaultLocale ? '/boxes' : `/${locale}/boxes`,
     items: [],
-  })
+  }, publicOrigin)
 
   return (
     <div className="bg-slate-950 min-h-screen py-8">

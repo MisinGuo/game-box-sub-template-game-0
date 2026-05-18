@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import ApiClient from '@/lib/api'
 import { siteConfig } from '@/config'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
+import { getPublicOrigin } from '@/lib/sitemap/security'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600
@@ -30,7 +31,7 @@ interface Article {
   section?: string
 }
 
-function getArticleUrl(article: Article): string {
+function getArticleUrl(article: Article, origin: string): string {
   const section = article.section || ''
   const allSections = {
     news: SiteSectionSlugGroups.news,
@@ -42,15 +43,17 @@ function getArticleUrl(article: Article): string {
   for (const [category, slugs] of Object.entries(allSections)) {
     if ((slugs as readonly string[]).includes(section)) {
       if (category === 'news') {
-        return `${siteConfig.hostname}/news/${article.masterArticleId}`
+        return `${origin}/news/${article.masterArticleId}`
       }
-      return `${siteConfig.hostname}/content/${category}/${article.masterArticleId}`
+      return `${origin}/content/${category}/${article.masterArticleId}`
     }
   }
-  return `${siteConfig.hostname}/topics/${article.masterArticleId}`
+  return `${origin}/topics/${article.masterArticleId}`
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  // 动态获取公开域名：优先 X-Forwarded-Host（代理场景），回退到静态配置
+  const origin = getPublicOrigin(request.headers)
   try {
     const allSections = [
       ...SiteSectionSlugGroups.news,
@@ -86,7 +89,7 @@ export async function GET() {
       : new Date().toUTCString()
 
     const items = latestArticles.map(article => {
-      const url = getArticleUrl(article)
+      const url = getArticleUrl(article, origin)
       const description = article.description || (article.content ? stripHtml(article.content).slice(0, 200) : article.title)
       return `    <item>
       <title>${escapeXml(article.title)}</title>
@@ -102,11 +105,11 @@ export async function GET() {
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>${escapeXml(siteConfig.name)}</title>
-    <link>${siteConfig.hostname}</link>
+    <link>${origin}</link>
     <description>${escapeXml(siteConfig.description)}</description>
     <language>zh-CN</language>
     <lastBuildDate>${lastBuildDate}</lastBuildDate>
-    <atom:link href="${siteConfig.hostname}/feed.xml" rel="self" type="application/rss+xml"/>
+    <atom:link href="${origin}/feed.xml" rel="self" type="application/rss+xml"/>
 ${items}
   </channel>
 </rss>`

@@ -15,6 +15,8 @@ import CategoryIntroduction from '@/components/category/CategoryIntroduction'
 import CategoryGifts from '@/components/category/CategoryGifts'
 import RelatedCategories from '@/components/category/RelatedCategories'
 import { generateCollectionPageJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 
 // 游戏类型
 interface Game {
@@ -520,6 +522,7 @@ async function CategoryPageContent({ locale, slug, page, source }: { locale: Loc
   }
 
   const currentPage = normalizePage(page)
+  const publicOrigin = getPublicOrigin(await headers())
 
   // 并行获取游戏总数（不阻塞其他部分）
   const firstPageDataPromise = getCategoryGamesPage(category.id, locale, 1, CATEGORY_PAGE_SIZE)
@@ -551,7 +554,7 @@ async function CategoryPageContent({ locale, slug, page, source }: { locale: Loc
               url: `/games/${game.id}`,
               image: game.iconUrl,
             })),
-          })),
+          }, publicOrigin)),
         }}
       />
       <script
@@ -561,7 +564,7 @@ async function CategoryPageContent({ locale, slug, page, source }: { locale: Loc
             { name: getTranslation('home', localeTyped), url: localeTyped === defaultLocale ? '/' : `/${localeTyped}` },
             { name: getTranslation('gameLibrary', localeTyped), url: localeTyped === defaultLocale ? '/games' : `/${localeTyped}/games` },
             { name: category.name, url: localeTyped === defaultLocale ? `/games/category/${slug}` : `/${localeTyped}/games/category/${slug}` },
-          ])),
+          ], publicOrigin)),
         }}
       />
       {/* 面包屑导航 */}

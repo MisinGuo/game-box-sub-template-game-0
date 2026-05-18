@@ -23,8 +23,6 @@ export interface SitemapUrl {
 export interface SitemapConfig {
   /** 允许的域名白名单 */
   allowedHosts: string[]
-  /** 默认域名（当请求来自非白名单域名时使用） */
-  defaultHostname: string
   /** 单个 sitemap 文件的最大 URL 数量 */
   maxUrlsPerSitemap: number
   /** 各内容类型的默认配置 */

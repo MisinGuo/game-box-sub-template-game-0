@@ -3,20 +3,23 @@ import { siteConfig } from '@/config'
 /**
  * JSON-LD 结构化数据生成工具
  * 用于 Google Rich Snippets / 富摘要展示
+ * ⚠️ 所有 URL 必须通过参数传入，不使用 siteConfig.hostname 硬编码
+ * 原因：通过 VPS nginx 反向代理访问时，siteConfig.hostname 是源站域名，
+ * 而非用户实际访问的公开域名。调用方应通过 getPublicOrigin() 获取正确的域名。
  */
 
 /** WebSite schema - 用于首页，支持站内搜索 */
-export function generateWebSiteJsonLd() {
+export function generateWebSiteJsonLd(siteUrl: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: siteConfig.name,
-    url: siteConfig.hostname,
+    url: siteUrl,
     potentialAction: {
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: `${siteConfig.hostname}/search?q={search_term_string}`,
+        urlTemplate: `${siteUrl}/search?q={search_term_string}`,
       },
       'query-input': 'required name=search_term_string',
     },
@@ -24,7 +27,7 @@ export function generateWebSiteJsonLd() {
 }
 
 /** Organization schema - 用于首页 */
-export function generateOrganizationJsonLd() {
+export function generateOrganizationJsonLd(siteUrl: string) {
   const sameAs = [
     siteConfig.social?.github,
     siteConfig.social?.twitter,
@@ -36,14 +39,14 @@ export function generateOrganizationJsonLd() {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: siteConfig.name,
-    url: siteConfig.hostname,
-    logo: `${siteConfig.hostname}${siteConfig.logo}`,
+    url: siteUrl,
+    logo: `${siteUrl}${siteConfig.logo}`,
     description: siteConfig.description,
     ...(sameAs.length > 0 && { sameAs }),
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer service',
-      url: siteConfig.hostname,
+      url: siteUrl,
     },
   }
 }
@@ -60,14 +63,14 @@ export function generateGameJsonLd(game: {
   launchTime?: string | null
   developer?: string | null
   tags?: string | null
-}) {
+}, siteUrl: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: game.name,
     description: game.description,
     image: game.iconUrl,
-    url: `${siteConfig.hostname}/games/${game.id}`,
+    url: `${siteUrl}/games/${game.id}`,
     applicationCategory: 'GameApplication',
     operatingSystem: 'Android, iOS',
     ...(game.categoryName && { genre: game.categoryName }),
@@ -104,7 +107,7 @@ export function generateArticleJsonLd(article: {
   updateTime?: string
   url: string
   tags?: string[]
-}) {
+}, siteUrl: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -112,21 +115,21 @@ export function generateArticleJsonLd(article: {
     description: article.description || article.title,
     image: article.coverImage
       ? article.coverImage
-      : `${siteConfig.hostname}${siteConfig.ogImage}`,
-    url: `${siteConfig.hostname}${article.url}`,
+      : `${siteUrl}${siteConfig.ogImage}`,
+    url: `${siteUrl}${article.url}`,
     datePublished: article.createTime,
     ...(article.updateTime && { dateModified: article.updateTime }),
     author: {
       '@type': 'Organization',
       name: article.author || siteConfig.name,
-      url: siteConfig.hostname,
+      url: siteUrl,
     },
     publisher: {
       '@type': 'Organization',
       name: siteConfig.name,
       logo: {
         '@type': 'ImageObject',
-        url: `${siteConfig.hostname}${siteConfig.logo}`,
+        url: `${siteUrl}${siteConfig.logo}`,
       },
     },
     ...(article.tags &&
@@ -140,20 +143,20 @@ export function generateCollectionPageJsonLd(opts: {
   description: string
   url: string
   items: { name: string; url: string; image?: string }[]
-}) {
+}, siteUrl: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name: opts.name,
     description: opts.description,
-    url: `${siteConfig.hostname}${opts.url}`,
+    url: `${siteUrl}${opts.url}`,
     mainEntity: {
       '@type': 'ItemList',
       itemListElement: opts.items.slice(0, 30).map((item, index) => ({
         '@type': 'ListItem',
         position: index + 1,
         name: item.name,
-        url: `${siteConfig.hostname}${item.url}`,
+        url: `${siteUrl}${item.url}`,
         ...(item.image && { image: item.image }),
       })),
     },
@@ -162,7 +165,8 @@ export function generateCollectionPageJsonLd(opts: {
 
 /** BreadcrumbList schema - 用于面包屑 */
 export function generateBreadcrumbJsonLd(
-  items: { name: string; url: string }[]
+  items: { name: string; url: string }[],
+  siteUrl: string
 ) {
   return {
     '@context': 'https://schema.org',
@@ -171,7 +175,7 @@ export function generateBreadcrumbJsonLd(
       '@type': 'ListItem',
       position: index + 1,
       name: item.name,
-      item: `${siteConfig.hostname}${item.url}`,
+      item: `${siteUrl}${item.url}`,
     })),
   }
 }
@@ -185,14 +189,14 @@ export function generateBoxJsonLd(box: {
   gameCount?: number
   discountRate?: number
   websiteUrl?: string
-}) {
+}, siteUrl: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: box.name,
     description: box.description || box.name,
-    image: box.logoUrl || `${siteConfig.hostname}${siteConfig.ogImage}`,
-    url: `${siteConfig.hostname}/boxes/${box.id}`,
+    image: box.logoUrl || `${siteUrl}${siteConfig.ogImage}`,
+    url: `${siteUrl}/boxes/${box.id}`,
     applicationCategory: 'GameApplication',
     operatingSystem: 'Android, iOS',
     ...(box.gameCount && {

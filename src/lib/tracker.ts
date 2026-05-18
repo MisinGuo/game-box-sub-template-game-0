@@ -14,6 +14,15 @@ export interface TrackContext {
   pageUrl?: string
 }
 
+/** 从 User-Agent 判断设备类型 */
+function parseUaCategory(ua: string | null): string {
+  if (!ua) return 'unknown'
+  const lower = ua.toLowerCase()
+  if (/tablet|ipad/.test(lower)) return 'tablet'
+  if (/mobile|android|iphone|ipod/.test(lower)) return 'mobile'
+  return 'desktop'
+}
+
 /** 从 pathname 推断 pageType 和 contentSlug */
 export function resolvePageMeta(pathname: string): TrackContext {
   // 去除 locale 前缀 /zh-TW/xxx -> /xxx
@@ -95,6 +104,7 @@ export function trackOutboundClick(
   ctx: Omit<TrackContext, 'viewportWidth' | 'pageUrl'>
 ): void {
   try {
+    const uaCategory = parseUaCategory(typeof navigator !== 'undefined' ? navigator.userAgent : null)
     sendBeaconPost('/api/track/event', {
       eventType: 'outbound_click',
       pageType: ctx.pageType,
@@ -102,6 +112,7 @@ export function trackOutboundClick(
       contentSlug: ctx.contentSlug ?? null,
       locale: ctx.locale ?? null,
       targetUrl,
+      uaCategory,
     })
   } catch {
     // 静默失败
@@ -114,6 +125,7 @@ export function trackScrollMilestone(
   ctx: Omit<TrackContext, 'viewportWidth' | 'pageUrl'>
 ): void {
   try {
+    const uaCategory = parseUaCategory(typeof navigator !== 'undefined' ? navigator.userAgent : null)
     sendBeaconPost('/api/track/event', {
       eventType: 'scroll_milestone',
       pageType: ctx.pageType,
@@ -121,6 +133,7 @@ export function trackScrollMilestone(
       contentSlug: ctx.contentSlug ?? null,
       locale: ctx.locale ?? null,
       scrollDepth: depth,
+      uaCategory,
     })
   } catch {
     // 静默失败
@@ -133,6 +146,7 @@ export function trackPageLeave(
   ctx: Omit<TrackContext, 'viewportWidth' | 'pageUrl'>
 ): void {
   try {
+    const uaCategory = parseUaCategory(typeof navigator !== 'undefined' ? navigator.userAgent : null)
     sendBeaconPost('/api/track/event', {
       eventType: 'page_leave',
       pageType: ctx.pageType,
@@ -140,6 +154,7 @@ export function trackPageLeave(
       contentSlug: ctx.contentSlug ?? null,
       locale: ctx.locale ?? null,
       timeOnPage: Math.min(Math.round(seconds), 3599),
+      uaCategory,
     })
   } catch {
     // 静默失败

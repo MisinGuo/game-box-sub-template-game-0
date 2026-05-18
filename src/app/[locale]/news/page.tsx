@@ -10,6 +10,8 @@ import { generateListMetadata } from '@/lib/metadata'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
 import ImageWithFallback from '../ImageWithFallback'
 import { generateCollectionPageJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 
 export async function generateStaticParams() {
   return supportedLocales.map(locale => ({ locale }))
@@ -147,6 +149,7 @@ async function NewsArticlesSection({
   locale: Locale
 }) {
   const articles = await getNewsArticles(locale)
+  const publicOrigin = getPublicOrigin(await headers())
   const groupedArticles = Array.from(
     articles.reduce((map, article) => {
       const groupName = article.categoryName?.trim() || (locale === 'en-US' ? 'Uncategorized' : locale === 'zh-TW' ? '未分類' : '未分类')
@@ -238,7 +241,7 @@ async function NewsArticlesSection({
               url: `${basePath}/news/${article.masterArticleId}`,
               image: article.coverImage,
             })),
-          })),
+          }, publicOrigin)),
         }}
       />
       {groupedArticles.map(([groupName, items]) => (

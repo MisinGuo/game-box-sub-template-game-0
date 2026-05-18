@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import ApiClient from '@/lib/api'
 import { ArticleLayout } from '@/components/content/ArticleLayout'
 import { generateArticleJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 import { getModuleConfig } from '@/config'
 import { isValidLocale, supportedLocales, defaultLocale, type Locale } from '@/config/site/locales'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
@@ -188,6 +190,7 @@ async function ReviewArticleContent({ slug, locale }: { slug: string; locale: Lo
     notFound()
   }
 
+  const publicOrigin = getPublicOrigin(await headers())
   const categoryHref = locale === defaultLocale ? '/content/reviews' : `/${locale}/content/reviews`
   const reviewUrl = locale === defaultLocale ? `/content/reviews/${slug}` : `/${locale}/content/reviews/${slug}`
 
@@ -205,7 +208,7 @@ async function ReviewArticleContent({ slug, locale }: { slug: string; locale: Lo
             updateTime: review.updateTime,
             url: reviewUrl,
             tags: review.tags,
-          })),
+          }, publicOrigin)),
         }}
       />
       <script
@@ -216,7 +219,7 @@ async function ReviewArticleContent({ slug, locale }: { slug: string; locale: Lo
             { name: locale === 'zh-TW' ? '內容中心' : locale === 'en-US' ? 'Content' : '内容中心', url: locale === defaultLocale ? '/content' : `/${locale}/content` },
             { name: locale === 'zh-TW' ? '橫評' : locale === 'en-US' ? 'Reviews' : '评测', url: locale === defaultLocale ? '/content/reviews' : `/${locale}/content/reviews` },
             { name: review.title, url: reviewUrl },
-          ])),
+          ], publicOrigin)),
         }}
       />
       <ArticleLayout

@@ -9,6 +9,8 @@ import ApiClient from '@/lib/api'
 import { isValidLocale, supportedLocales, defaultLocale, type Locale } from '@/config/site/locales'
 import { generateListMetadata } from '@/lib/metadata'
 import { generateCollectionPageJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 import ImageWithFallback from '../ImageWithFallback'
 
 export async function generateStaticParams() {
@@ -283,6 +285,7 @@ export default async function ZheDiscountPage({
 
   const locale = localeParam as Locale
   const basePath = locale === defaultLocale ? '' : `/${locale}`
+  const publicOrigin = getPublicOrigin(await headers())
 
   const t = {
     heroTitle:
@@ -328,7 +331,7 @@ export default async function ZheDiscountPage({
     description: t.heroSubtitle,
     url: basePath ? `${basePath}/01zhe` : '/01zhe',
     items: [],
-  })
+  }, publicOrigin)
 
   return (
     <>

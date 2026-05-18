@@ -6,6 +6,8 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import { isValidLocale, supportedLocales, defaultLocale, type Locale } from '@/config/site/locales'
 import { generateListMetadata } from '@/lib/metadata'
 import { generateCollectionPageJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 
 export async function generateStaticParams() {
   return supportedLocales.map(locale => ({ locale }))
@@ -62,6 +64,7 @@ export default async function ContentCenterPage({
   }
   
   const locale = localeParam as Locale
+  const publicOrigin = getPublicOrigin(await headers())
   
   const t = (key: string) => {
     const translations: Record<string, Record<Locale, string>> = {
@@ -134,7 +137,7 @@ export default async function ContentCenterPage({
               name: cat.title,
               url: cat.href,
             })),
-          })),
+          }, publicOrigin)),
         }}
       />
       {/* 面包屑 */}

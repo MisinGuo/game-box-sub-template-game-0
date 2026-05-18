@@ -9,6 +9,8 @@ import { isValidLocale, supportedLocales, defaultLocale, type Locale } from '@/c
 import { generateListMetadata } from '@/lib/metadata'
 import { formatCount } from '@/lib/format'
 import { generateCollectionPageJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 import ImageWithFallback from '../ImageWithFallback'
 
 export async function generateStaticParams() {
@@ -222,6 +224,7 @@ function RankItem({
 async function RankListSection({ locale }: { locale: Locale }) {
   const games = await getRankedGames(locale)
   const basePath = locale === defaultLocale ? '' : `/${locale}`
+  const publicOrigin = getPublicOrigin(await headers())
 
   const t = {
     top10: locale === 'zh-CN' ? '人气TOP 10' : locale === 'zh-TW' ? '人氣TOP 10' : 'Top 10 Popular',
@@ -246,7 +249,7 @@ async function RankListSection({ locale }: { locale: Locale }) {
     description: locale === 'zh-CN' ? '最热门手游排行' : 'Top mobile game rankings',
     url: basePath ? `${basePath}/rank` : '/rank',
     items: top10.map(g => ({ name: g.name, url: `${basePath}/games/${g.id}`, image: g.iconUrl })),
-  })
+  }, publicOrigin)
 
   return (
     <>

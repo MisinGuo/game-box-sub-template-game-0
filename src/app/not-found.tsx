@@ -15,7 +15,7 @@ const messages: Record<string, { title: string; desc: string; back: string }> = 
 }
 
 export default async function RootNotFound() {
-  const headersList = await headers()
+  const headersList = headers()
   const locale = headersList.get('x-locale') || 'zh-CN'
   const { title, desc, back } = messages[locale] || messages['zh-CN']
   const homeUrl = locale === 'zh-CN' ? '/' : `/${locale}`

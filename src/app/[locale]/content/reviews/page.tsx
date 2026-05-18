@@ -9,6 +9,8 @@ import { generateListMetadata } from '@/lib/metadata'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
 import ImageWithFallback from '../../ImageWithFallback'
 import { generateCollectionPageJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 import { siteConfig } from '@/config'
 
 export async function generateStaticParams() {
@@ -136,6 +138,7 @@ export default async function ReviewsPage({
 
   const locale = localeParam as Locale
   const articles = await getReviewArticles(locale)
+  const publicOrigin = getPublicOrigin(await headers())
   const groupedArticles = Array.from(
     articles.reduce((map, article) => {
       const groupName = article.categoryName?.trim() || (locale === 'en-US' ? 'Uncategorized' : locale === 'zh-TW' ? '未分類' : '未分类')
@@ -159,7 +162,7 @@ export default async function ReviewsPage({
       url: `${basePath}/content/reviews/${a.masterArticleId}`,
       image: a.coverImage,
     })),
-  })
+  }, publicOrigin)
 
   const ArticleCard = ({ article }: { article: ReviewArticle }) => (
     <Link href={`${basePath}/content/reviews/${article.masterArticleId}`} className="group">

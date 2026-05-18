@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import ApiClient from '@/lib/api'
 import { ArticleLayout } from '@/components/content/ArticleLayout'
 import { generateArticleJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 import { getModuleConfig } from '@/config'
 import { isValidLocale, supportedLocales, defaultLocale, type Locale } from '@/config/site/locales'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
@@ -172,6 +174,8 @@ async function NewsArticleContent({ id, locale }: { id: string; locale: Locale }
     getAvailableNewsLocales(id),
   ])
 
+  const publicOrigin = getPublicOrigin(await headers())
+
   if (!news) {
     notFound()
   }
@@ -195,7 +199,7 @@ async function NewsArticleContent({ id, locale }: { id: string; locale: Locale }
             updateTime: news.updateTime,
             url: newsUrl,
             tags: news.tags,
-          })),
+          }, publicOrigin)),
         }}
       />
       <script
@@ -205,7 +209,7 @@ async function NewsArticleContent({ id, locale }: { id: string; locale: Locale }
             { name: locale === 'zh-TW' ? '首頁' : locale === 'en-US' ? 'Home' : '首页', url: locale === defaultLocale ? '/' : `/${locale}` },
             { name: locale === 'zh-TW' ? '遊戲資訊' : locale === 'en-US' ? 'News' : '游戏资讯', url: locale === defaultLocale ? '/news' : `/${locale}/news` },
             { name: news.title, url: newsUrl },
-          ])),
+          ], publicOrigin)),
         }}
       />
       <ArticleLayout

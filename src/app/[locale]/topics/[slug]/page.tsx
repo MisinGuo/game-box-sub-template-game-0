@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import ApiClient from '@/lib/api'
 import { ArticleLayout } from '@/components/content/ArticleLayout'
 import { generateArticleJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 import { getModuleConfig } from '@/config'
 import { isValidLocale, supportedLocales, defaultLocale, type Locale } from '@/config/site/locales'
 
@@ -161,6 +163,7 @@ async function TopicArticleContent({ slug, locale }: { slug: string; locale: Loc
 
   if (!topic) notFound()
 
+  const publicOrigin = getPublicOrigin(await headers())
   const categoryHref = locale === defaultLocale ? '/topics' : `/${locale}/topics`
   const topicUrl = locale === defaultLocale ? `/topics/${slug}` : `/${locale}/topics/${slug}`
 
@@ -178,7 +181,7 @@ async function TopicArticleContent({ slug, locale }: { slug: string; locale: Loc
             updateTime: topic.updateTime,
             url: topicUrl,
             tags: topic.tags,
-          })),
+          }, publicOrigin)),
         }}
       />
       <script
@@ -194,7 +197,7 @@ async function TopicArticleContent({ slug, locale }: { slug: string; locale: Loc
               url: locale === defaultLocale ? '/topics' : `/${locale}/topics`,
             },
             { name: topic.title, url: topicUrl },
-          ])),
+          ], publicOrigin)),
         }}
       />
       <ArticleLayout

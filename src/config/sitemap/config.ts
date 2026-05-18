@@ -10,8 +10,6 @@ export const sitemapConfig: SitemapConfig = {
     'localhost:3000',
     'localhost:8788', // Cloudflare Workers 本地开发
   ],
-  // 默认域名（当请求来自非白名单域名时使用）
-  defaultHostname: 'https://www.5awyx.com',
   // 每个 sitemap 文件最多收录的 URL 数量（Google 支持最多 50000 条）
   maxUrlsPerSitemap: 10000,
   

@@ -14,6 +14,7 @@ import { BehaviorTracker } from '@/components/common/BehaviorTracker'
 import { siteConfig } from '@/config'
 import { backendConfig } from '@/config/api/backend'
 import { buildThemeCSSVars, siteTheme } from '@/lib/site-config'
+import { getPublicOrigin } from '@/lib/sitemap/security'
 import ApiClient from '@/lib/api'
 
 const notoSansSC = Noto_Sans_SC({
@@ -35,6 +36,9 @@ const supportedLocales = ['zh-CN', 'zh-TW', 'en-US']
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers()
   const locale = headersList.get('x-locale') || 'zh-CN'
+
+  // 动态获取公开域名：优先 X-Forwarded-Host（代理场景），回退到静态配置
+  const publicOrigin = getPublicOrigin(headersList)
 
   const alternateLocales = supportedLocales
     .filter(l => l !== locale)
@@ -60,7 +64,7 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 
   return {
-    metadataBase: new URL(siteConfig.hostname),
+    metadataBase: new URL(publicOrigin),
     title: {
       default: siteName,
       template: `%s | ${siteName}`

@@ -13,6 +13,8 @@ import { generateHomeMetadata } from '@/lib/metadata'
 import { formatCount, formatMoney } from '@/lib/format'
 import ImageWithFallback from './ImageWithFallback'
 import { generateWebSiteJsonLd, generateOrganizationJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 import type { Metadata } from 'next'
 import type { Locale } from '@/config/types'
 import type { ArticleListItem, GameListItem } from '@/lib/api-types'
@@ -298,6 +300,7 @@ export default async function LocaleHomePage({ params }: { params: Promise<{ loc
   }
 
   const lp = (path: string) => currentLocale === defaultLocale ? path : `/${currentLocale}${path}`
+  const publicOrigin = getPublicOrigin(await headers())
   
   // 处理 hero description  
   const heroDescription = homeConfig.hero.description[currentLocale as keyof typeof homeConfig.hero.description] || homeConfig.hero.description[defaultLocale as keyof typeof homeConfig.hero.description]
@@ -307,11 +310,11 @@ export default async function LocaleHomePage({ params }: { params: Promise<{ loc
       {/* JSON-LD 结构化数据 */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(generateWebSiteJsonLd()) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(generateWebSiteJsonLd(publicOrigin)) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(generateOrganizationJsonLd()) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(generateOrganizationJsonLd(publicOrigin)) }}
       />
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden border-b border-slate-800">

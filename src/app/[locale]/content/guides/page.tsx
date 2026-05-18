@@ -9,6 +9,8 @@ import { generateListMetadata } from '@/lib/metadata'
 import { SiteSectionSlugGroups } from '@/config/pages/content'
 import ImageWithFallback from '../../ImageWithFallback'
 import { generateCollectionPageJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 import { siteConfig } from '@/config'
 
 export async function generateStaticParams() {
@@ -123,6 +125,7 @@ export default async function GuidesPage({
   }
   
   const locale = localeParam as Locale
+  const publicOrigin = getPublicOrigin(await headers())
   const articles = await getGuideArticles(locale)
   const groupedArticles = Array.from(
     articles.reduce((map, article) => {
@@ -147,7 +150,7 @@ export default async function GuidesPage({
       url: `${basePath}/content/guides/${a.masterArticleId}`,
       image: a.coverUrl || a.coverImage,
     })),
-  })
+  }, publicOrigin)
 
   const ArticleCard = ({ article }: { article: GuideArticle }) => (
     <Link href={`${basePath}/content/guides/${article.masterArticleId}`} className="group">

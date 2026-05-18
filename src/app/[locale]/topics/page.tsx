@@ -37,16 +37,16 @@ export async function generateMetadata({
       : locale === 'en-US'
       ? 'Browse all game topic collections and explore curated content.'
       : '浏览所有游戏专题合集，探索精选游戏内容。'
-  const canonicalUrl =
+  const canonicalPath =
     locale === defaultLocale
-      ? `${siteConfig.hostname}/topics`
-      : `${siteConfig.hostname}/${locale}/topics`
+      ? '/topics'
+      : `/${locale}/topics`
 
   return {
     title,
     description,
-    alternates: { canonical: canonicalUrl },
-    openGraph: { title, description, url: canonicalUrl, type: 'website' },
+    alternates: { canonical: canonicalPath },
+    openGraph: { title, description, url: canonicalPath, type: 'website' },
   }
 }
 

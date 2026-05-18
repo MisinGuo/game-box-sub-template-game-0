@@ -14,6 +14,8 @@ import type { BoxRelation } from '@/components/game/GameBoxes'
 import RelatedGames from '@/components/game/RelatedGames'
 import ScreenshotLightbox from '@/components/game/ScreenshotLightbox'
 import { generateGameJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 import { gamePageTranslations, getT } from '@/i18n/page-translations'
 import { defaultLocale, supportedLocales, type Locale } from '@/config/site/locales'
 
@@ -364,6 +366,7 @@ function GamePageSkeleton() {
 async function GameDetailContent({ id, locale }: { id: string; locale: string }) {
   const data = await getGameData(id, locale)
   const t = getT(gamePageTranslations, locale)
+  const publicOrigin = getPublicOrigin(await headers())
 
   // 根据 locale 生成带前缀的路径，默认语言无前缀
   const localePath = (path: string) =>
@@ -390,7 +393,7 @@ async function GameDetailContent({ id, locale }: { id: string; locale: string })
       {/* JSON-LD 结构化数据 */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(generateGameJsonLd(game)) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(generateGameJsonLd(game, publicOrigin)) }}
       />
       <script
         type="application/ld+json"
@@ -399,7 +402,7 @@ async function GameDetailContent({ id, locale }: { id: string; locale: string })
             { name: t.home, url: localePath('/') },
             { name: t.gameLibrary, url: localePath('/games') },
             { name: game.name, url: localePath(`/games/${id}`) },
-          ])),
+          ], publicOrigin)),
         }}
       />
       {/* Hero Banner —— 模糊封面背景 */}

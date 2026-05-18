@@ -5,6 +5,8 @@ import ApiClient from '@/lib/api'
 import DownloadClient from './DownloadClient'
 import type { Metadata } from 'next'
 import { generateBreadcrumbJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 
 export const dynamic = 'auto'
 
@@ -105,6 +107,7 @@ export default async function DownloadPage({ params }: DownloadPageProps) {
 
 async function DownloadPageContent({ locale, id }: { locale: Locale; id: number }) {
   let boxData: any = null
+  const publicOrigin = getPublicOrigin(await headers())
 
   try {
     const response = await ApiClient.getBoxDetail(id, locale)
@@ -134,7 +137,7 @@ async function DownloadPageContent({ locale, id }: { locale: Locale; id: number 
             { name: boxesLabel, url: locale === defaultLocale ? '/boxes' : `/${locale}/boxes` },
             { name: boxData.name, url: locale === defaultLocale ? `/boxes/${id}` : `/${locale}/boxes/${id}` },
             { name: downloadLabel, url: locale === defaultLocale ? `/boxes/${id}/download` : `/${locale}/boxes/${id}/download` },
-          ])),
+          ], publicOrigin)),
         }}
       />
       <DownloadClient boxData={boxData} locale={locale} />

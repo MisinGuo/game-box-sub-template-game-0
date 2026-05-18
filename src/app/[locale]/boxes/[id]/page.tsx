@@ -11,6 +11,8 @@ import ApiClient from '@/lib/api'
 import ImageWithFallback from '../../ImageWithFallback'
 import { boxPageTranslations, getT } from '@/i18n/page-translations'
 import { generateBoxJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
+import { getPublicOrigin } from '@/lib/sitemap/security'
+import { headers } from 'next/headers'
 
 // 按需渲染 + ISR 缓存，构建时不预生成，首次访问后缓存 5 分钟
 export const dynamic = 'auto'
@@ -123,6 +125,7 @@ function BoxDetailSkeleton() {
 async function BoxDetailContent({ locale, id, pageNum }: { locale: Locale; id: number; pageNum: number }) {
   const t = getT(boxPageTranslations, locale)
   const lp = (path: string) => locale === defaultLocale ? path : `/${locale}${path}`
+  const publicOrigin = getPublicOrigin(await headers())
   const BOX_GAMES_PAGE_SIZE = 15
 
   const extractRows = (response: any): any[] => {
@@ -218,7 +221,7 @@ async function BoxDetailContent({ locale, id, pageNum }: { locale: Locale; id: n
             gameCount: box.gameCount,
             discountRate: box.discountRate,
             websiteUrl: box.websiteUrl,
-          })),
+          }, publicOrigin)),
         }}
       />
       <script
@@ -228,7 +231,7 @@ async function BoxDetailContent({ locale, id, pageNum }: { locale: Locale; id: n
             { name: t.home, url: locale === defaultLocale ? '/' : `/${locale}` },
             { name: t.boxes, url: locale === defaultLocale ? '/boxes' : `/${locale}/boxes` },
             { name: box.name, url: locale === defaultLocale ? `/boxes/${id}` : `/${locale}/boxes/${id}` },
-          ])),
+          ], publicOrigin)),
         }}
       />
       <nav className="container mx-auto px-4 py-4 text-sm text-slate-400 flex items-center">
