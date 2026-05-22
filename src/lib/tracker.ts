@@ -131,6 +131,7 @@ export function trackScrollMilestone(
   depth: 25 | 50 | 75 | 100,
   ctx: Omit<TrackContext, 'viewportWidth' | 'pageUrl'>
 ): void {
+  if (trackDisabled) return
   try {
     const uaCategory = parseUaCategory(typeof navigator !== 'undefined' ? navigator.userAgent : null)
     sendBeaconPost('/api/track/event', {
@@ -152,6 +153,7 @@ export function trackPageLeave(
   seconds: number,
   ctx: Omit<TrackContext, 'viewportWidth' | 'pageUrl'>
 ): void {
+  if (trackDisabled) return
   try {
     const uaCategory = parseUaCategory(typeof navigator !== 'undefined' ? navigator.userAgent : null)
     sendBeaconPost('/api/track/event', {
