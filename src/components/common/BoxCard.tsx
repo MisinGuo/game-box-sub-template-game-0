@@ -1,10 +1,10 @@
 import { Star } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import Link from 'next/link'
 import { locales, defaultLocale } from '@/config/site/locales'
 import type { Locale } from '@/config/site/locales'
+import { BoxDownloadButtons } from '@/components/common/BoxDownloadButtons'
 
 interface BoxCardProps {
   id: number;
@@ -18,9 +18,11 @@ interface BoxCardProps {
   rating: number;
   discount: string;
   locale?: string;
+  androidUrl?: string;
+  iosUrl?: string;
 }
 
-export function BoxCard({ id, name, logoColor, logoText, logoUrl, description, tags, gameCount, rating, discount, locale = defaultLocale }: BoxCardProps) {
+export function BoxCard({ id, name, logoColor, logoText, logoUrl, description, tags, gameCount, rating, discount, locale = defaultLocale, androidUrl, iosUrl }: BoxCardProps) {
   const t = locales[(locale as Locale) in locales ? (locale as Locale) : defaultLocale].translations
   const lp = (path: string) => locale === defaultLocale ? path : `/${locale}${path}`
   const gameCountText = locale === 'en-US' ? `${gameCount} ${t.gamesCount}` : `${gameCount}${t.gamesCount}`
@@ -76,14 +78,12 @@ export function BoxCard({ id, name, logoColor, logoText, logoUrl, description, t
             </p>
           )}
 
-          {/* Footer with Game Count */}
+          {/* Footer with Game Count and Download Buttons */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-700">
             <span className="text-xs text-slate-500">
               🎮 {gameCountText}
             </span>
-            <Button className="h-8 px-4 text-xs bg-blue-600 hover:bg-blue-700 font-semibold transition-all group-hover:shadow-lg group-hover:shadow-blue-500/30">
-              {t.viewDetail}
-            </Button>
+            <BoxDownloadButtons androidUrl={androidUrl} iosUrl={iosUrl} viewDetailText={t.viewDetail} />
           </div>
         </CardContent>
       </Card>

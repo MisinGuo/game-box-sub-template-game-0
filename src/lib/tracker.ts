@@ -3,7 +3,12 @@
  *
  * 所有数据经 /api/track/* Next.js API 层中转，
  * 服务端负责拼接敏感信息（UA、IP、Referer、Cookie）后再转发后端。
+ *
+ * 设置 NEXT_PUBLIC_TRACK_DISABLED=true 可禁用所有埋点（开发环境用）。
  */
+
+const trackDisabled = typeof window !== 'undefined'
+  && process.env.NEXT_PUBLIC_TRACK_DISABLED === 'true'
 
 export interface TrackContext {
   pageType: string
@@ -84,6 +89,7 @@ function sendBeaconPost(url: string, data: Record<string, unknown>): void {
 
 /** 上报 PV */
 export function trackPV(ctx: TrackContext): void {
+  if (trackDisabled) return
   try {
     sendBeaconPost('/api/track/pv', {
       pageType: ctx.pageType,
@@ -103,6 +109,7 @@ export function trackOutboundClick(
   targetUrl: string,
   ctx: Omit<TrackContext, 'viewportWidth' | 'pageUrl'>
 ): void {
+  if (trackDisabled) return
   try {
     const uaCategory = parseUaCategory(typeof navigator !== 'undefined' ? navigator.userAgent : null)
     sendBeaconPost('/api/track/event', {

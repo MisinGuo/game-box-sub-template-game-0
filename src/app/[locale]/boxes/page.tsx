@@ -190,6 +190,8 @@ async function BoxesDataSections({ locale }: { locale: Locale }) {
                 rating={4.5}
                 discount={discountText}
                 locale={locale}
+                androidUrl={box.androidUrl}
+                iosUrl={box.iosUrl}
               />
             )
           })
