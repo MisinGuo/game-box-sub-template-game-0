@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getOutboundUrl } from '@/lib/outbound-url'
 import { FileText, Eye, Clock, ChevronRight, ExternalLink } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -58,7 +59,7 @@ export default function GameGuides({
             <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
             <p className="text-muted-foreground mb-4">{t.noGuides}</p>
             {subSiteUrl && (
-              <a href={subSiteUrl} target="_blank" rel="nofollow">
+              <a href={getOutboundUrl(subSiteUrl)} rel="nofollow noopener noreferrer">
                 <Button variant="outline">
                   {t.visitSite}
                   <ExternalLink className="ml-2 h-4 w-4" />
@@ -139,7 +140,7 @@ export default function GameGuides({
         )}
         
         {subSiteUrl && (
-          <a href={`${subSiteUrl}?game=${gameId}`} target="_blank" rel="nofollow">
+          <a href={getOutboundUrl(`${subSiteUrl}?game=${gameId}`)} rel="nofollow noopener noreferrer">
             <Button variant="ghost">
               {t.visitDeep}
               <ExternalLink className="ml-2 h-4 w-4" />

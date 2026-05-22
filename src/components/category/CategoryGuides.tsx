@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import ImageWithFallback from '@/app/[locale]/ImageWithFallback'
 import type { ArticleListItem } from '@/lib/api-types'
+import { getOutboundUrl } from '@/lib/outbound-url'
 
 interface CategoryGuidesProps {
   categoryName: string
@@ -161,7 +162,7 @@ export default function CategoryGuides({
         </Link>
         
         {subSiteUrl && (
-          <a href={subSiteUrl} target="_blank" rel="nofollow" className="inline-block">
+          <a href={getOutboundUrl(subSiteUrl)} rel="nofollow noopener noreferrer" className="inline-block">
             <Button variant="ghost">
               {t.visitDeep}
               <ChevronRight className="ml-2 h-4 w-4" />

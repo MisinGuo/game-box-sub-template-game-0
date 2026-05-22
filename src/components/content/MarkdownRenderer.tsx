@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import type { Components } from 'react-markdown'
 import { siteConfig } from '@/config/site/site'
+import { getOutboundUrl } from '@/lib/outbound-url'
 
 interface MarkdownRendererProps {
   content: string
@@ -77,9 +78,8 @@ const components: Components = {
     if (href?.startsWith('http')) {
       return (
         <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={getOutboundUrl(href)}
+          rel="nofollow noopener noreferrer"
           className="text-blue-400 hover:text-blue-300 underline"
           {...props}
         >

@@ -18,6 +18,7 @@ import { getPublicOrigin } from '@/lib/sitemap/security'
 import { headers } from 'next/headers'
 import { gamePageTranslations, getT } from '@/i18n/page-translations'
 import { defaultLocale, supportedLocales, type Locale } from '@/config/site/locales'
+import { GameDownloadButtons } from '@/components/common/GameDownloadButtons'
 
 // 游戏类型定义
 interface Game {
@@ -477,39 +478,15 @@ async function GameDetailContent({ id, locale }: { id: string; locale: string })
                 </div>
               </div>
 
-              {/* 按钮组 —— 移动端全宽，桌面端自适应 */}
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
-                {(game.downloadUrl || game.androidUrl) ? (
-                  <Button
-                    size="default"
-                    className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 font-bold shadow-lg shadow-blue-500/30 sm:px-8"
-                    asChild
-                  >
-                    <a href={game.downloadUrl || game.androidUrl || '#'} target="_blank" rel="noopener noreferrer">
-                      <Download className="h-4 w-4 mr-2" />
-                      {game.downloadUrl ? t.downloadNow : t.androidDownload}
-                    </a>
-                  </Button>
-                ) : (
-                  <Button size="default" className="w-full sm:w-auto sm:px-8 bg-slate-700 text-slate-400 cursor-not-allowed" disabled>
-                    <Download className="h-4 w-4 mr-2" />{t.noDownload}
-                  </Button>
-                )}
-                {game.iosUrl && (
-                  <Button
-                    size="default"
-                    className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 font-bold shadow-lg shadow-green-500/30 sm:px-8"
-                    asChild
-                  >
-                    <a href={game.iosUrl} target="_blank" rel="noopener noreferrer">
-                      <Download className="h-4 w-4 mr-2" />{t.iosDownload}
-                    </a>
-                  </Button>
-                )}
-                <Button size="default" variant="outline" className="w-full sm:w-auto border-white/10 text-slate-300 hover:text-white hover:border-white/20">
-                  <Share2 className="h-4 w-4 mr-2" />{t.share}
-                </Button>
-              </div>
+              <GameDownloadButtons
+                downloadUrl={game.downloadUrl}
+                androidUrl={game.androidUrl}
+                iosUrl={game.iosUrl}
+                downloadNowText={t.downloadNow}
+                androidText={t.androidDownload}
+                iosText={t.iosDownload}
+                noDownloadText={t.noDownload}
+              />
 
               {/* 信息条 */}
               <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs md:text-sm border-t border-white/5 pt-3">

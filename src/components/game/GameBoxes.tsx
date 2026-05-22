@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ExternalLink, Download, Globe, Sparkles, Gift } from 'lucide-react'
 import Link from 'next/link'
+import { getOutboundUrl } from '@/lib/outbound-url'
 import { usePathname } from 'next/navigation'
 import { trackOutboundClick, resolvePageMeta } from '@/lib/tracker'
 
@@ -324,29 +325,25 @@ export default function GameBoxes({ boxes, locale, defaultLocale }: GameBoxesPro
                       <Button
                         size="sm"
                         className="bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-xs h-7"
-                        asChild
+                        onClick={() => { handleOutboundClick(mainDownloadUrl); window.open(getOutboundUrl(mainDownloadUrl), '_blank', 'noopener,noreferrer'); }}
                       >
-                        <a href={mainDownloadUrl} target="_blank" rel="sponsored noopener noreferrer" onClick={() => handleOutboundClick(mainDownloadUrl)}>
-                          <Download className="h-3 w-3 mr-1" /> 下载游戏
-                        </a>
+                        <Download className="h-3 w-3 mr-1" /> 下载游戏
                       </Button>
                     )}
 
                     {/* 推广链接（排除已作为主下载的链接） */}
                     {links
                       .filter(l => l.url !== mainDownloadUrl && l.label !== '下载')
-                      .slice(0, 4) // 最多显示 4 个额外链接
+                      .slice(0, 4)
                       .map((link, idx) => (
                         <Button
                           key={idx}
                           size="sm"
                           variant="outline"
                           className="border-slate-600 text-slate-300 hover:text-white text-xs h-7"
-                          asChild
+                          onClick={() => { handleOutboundClick(link.url); window.open(getOutboundUrl(link.url), '_blank', 'noopener,noreferrer'); }}
                         >
-                          <a href={link.url} target="_blank" rel="sponsored noopener noreferrer" onClick={() => handleOutboundClick(link.url)}>
-                            <ExternalLink className="h-3 w-3 mr-1" /> {link.label}
-                          </a>
+                          <ExternalLink className="h-3 w-3 mr-1" /> {link.label}
                         </Button>
                       ))}
 
@@ -356,11 +353,9 @@ export default function GameBoxes({ boxes, locale, defaultLocale }: GameBoxesPro
                         size="sm"
                         variant="outline"
                         className="border-slate-600 text-slate-300 hover:text-white text-xs h-7"
-                        asChild
+                        onClick={() => { handleOutboundClick(box.promoteUrl!); window.open(getOutboundUrl(box.promoteUrl!), '_blank', 'noopener,noreferrer'); }}
                       >
-                        <a href={box.promoteUrl} target="_blank" rel="sponsored noopener noreferrer" onClick={() => handleOutboundClick(box.promoteUrl!)}>
-                          <ExternalLink className="h-3 w-3 mr-1" /> 推广页
-                        </a>
+                        <ExternalLink className="h-3 w-3 mr-1" /> 推广页
                       </Button>
                     )}
                   </div>

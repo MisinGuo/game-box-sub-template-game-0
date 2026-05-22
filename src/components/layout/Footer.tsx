@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Mail } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useLocale } from '@/contexts/LocaleContext'
 import { siteConfig } from '@/config'
@@ -19,7 +19,6 @@ export function Footer() {
       id: item.path,
       label: t(item.i18nKey) || item.label,
     }))
-  const socialLinks = Object.entries(siteConfigFile.branding.social ?? {})
   const primaryNavItem = navItems.find((item) => item.id !== '/') || navItems[0]
   
   const getLocalePath = (path: string) => {
@@ -77,23 +76,14 @@ export function Footer() {
         </div>
 
         <div>
-          <h3 className="mb-4 font-semibold text-white">{t('followUs')}</h3>
-          <div className="space-y-3 text-sm">
-            {socialLinks.length > 0 ? socialLinks.map(([platform, url]) => (
-              <a
-                key={platform}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 transition-colors hover:border-sky-500/40 hover:text-sky-400"
-              >
-                <span className="capitalize">{platform}</span>
-                <ChevronRight className="h-4 w-4" />
-              </a>
-            )) : (
-              <p className="text-sm leading-7 text-slate-500">{t('subscribeNewsletter')}</p>
-            )}
-          </div>
+          <h3 className="mb-4 font-semibold text-white">{t('contactUs')}</h3>
+          <a
+            href="mailto:guogms@qq.com"
+            className="inline-flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-sky-400"
+          >
+            <Mail className="h-4 w-4" />
+            guogms@qq.com
+          </a>
         </div>
       </div>
 

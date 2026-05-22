@@ -13,6 +13,8 @@ import { boxPageTranslations, getT } from '@/i18n/page-translations'
 import { generateBoxJsonLd, generateBreadcrumbJsonLd } from '@/lib/jsonld'
 import { getPublicOrigin } from '@/lib/sitemap/security'
 import { headers } from 'next/headers'
+import { getOutboundUrl } from '@/lib/outbound-url'
+import { BoxDetailDownloadButtons } from '@/components/common/BoxDetailDownloadButtons'
 
 // 按需渲染 + ISR 缓存，构建时不预生成，首次访问后缓存 5 分钟
 export const dynamic = 'auto'
@@ -291,36 +293,15 @@ async function BoxDetailContent({ locale, id, pageNum }: { locale: Locale; id: n
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
-                {box.androidUrl ? (
-                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 h-12 px-8" asChild>
-                    <a href={box.androidUrl} target="_blank" rel="nofollow noopener noreferrer">
-                      <Download className="mr-2 h-5 w-5" />
-                      {t.androidDownload}
-                    </a>
-                  </Button>
-                ) : (
-                  <Button size="lg" className="h-12 px-8 bg-slate-700 text-slate-400 cursor-not-allowed" disabled>
-                    <Download className="mr-2 h-5 w-5" />{t.noDownload}
-                  </Button>
-                )}
-                {box.iosUrl && (
-                  <Button size="lg" className="bg-green-600 hover:bg-green-700 h-12 px-8" asChild>
-                    <a href={box.iosUrl} target="_blank" rel="nofollow noopener noreferrer">
-                      <Download className="mr-2 h-5 w-5" />
-                      {t.iosDownload}
-                    </a>
-                  </Button>
-                )}
-                {box.downloadUrl && (
-                  <Button size="lg" variant="outline" className="h-12 px-8 border-slate-700 text-slate-300 hover:text-white hover:border-slate-500" asChild>
-                    <a href={box.downloadUrl} target="_blank" rel="nofollow noopener noreferrer">
-                      <ExternalLink className="mr-2 h-5 w-5" />
-                      {t.sourceDownload}
-                    </a>
-                  </Button>
-                )}
-              </div>
+              <BoxDetailDownloadButtons
+                androidUrl={box.androidUrl}
+                iosUrl={box.iosUrl}
+                downloadUrl={box.downloadUrl}
+                androidText={t.androidDownload}
+                iosText={t.iosDownload}
+                sourceText={t.sourceDownload}
+                noDownloadText={t.noDownload}
+              />
             </div>
           </div>
         </div>
@@ -441,7 +422,7 @@ async function BoxDetailContent({ locale, id, pageNum }: { locale: Locale; id: n
               <div className="flex items-center gap-3">
                 <ExternalLink className="h-5 w-5 text-blue-400" />
                 <a
-                  href={box.websiteUrl}
+                  href={getOutboundUrl(box.websiteUrl)}
                   target="_blank"
                   rel="nofollow noopener noreferrer"
                   className="text-blue-400 hover:text-blue-300 hover:underline"
