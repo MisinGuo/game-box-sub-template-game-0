@@ -14,7 +14,7 @@ import { BehaviorTracker } from '@/components/common/BehaviorTracker'
 import { siteConfig } from '@/config'
 import { backendConfig } from '@/config/api/backend'
 import { buildThemeCSSVars, siteTheme } from '@/lib/site-config'
-import { getPublicOrigin } from '@/lib/sitemap/security'
+import { getPublicOrigin, getSafePublicOrigin } from '@/lib/sitemap/security'
 import ApiClient from '@/lib/api'
 
 const notoSansSC = Noto_Sans_SC({
@@ -38,7 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = headersList.get('x-locale') || 'zh-CN'
 
   // 动态获取公开域名：优先 X-Forwarded-Host（代理场景），回退到静态配置
-  const publicOrigin = getPublicOrigin(headersList)
+  const publicOrigin = getSafePublicOrigin(headersList)
 
   const alternateLocales = supportedLocales
     .filter(l => l !== locale)
@@ -95,14 +95,14 @@ export default async function RootLayout({
 }) {
   const headersList = await headers()
   const locale = headersList.get('x-locale') || 'zh-CN'
-  const apiOrigin = new URL(backendConfig.baseURL).origin
+  const apiOrigin = (() => { try { return new URL(backendConfig.baseURL).origin } catch { return null } })()
   const themeCSSVars = buildThemeCSSVars(siteTheme)
 
   return (
     <html lang={locale} style={themeCSSVars}>
       <head>
-        <link rel="preconnect" href={apiOrigin} />
-        <link rel="dns-prefetch" href={apiOrigin} />
+        {apiOrigin && <link rel="preconnect" href={apiOrigin} />}
+        {apiOrigin && <link rel="dns-prefetch" href={apiOrigin} />}
         <link rel="alternate" type="application/rss+xml" title={siteConfig.name} href="/feed.xml" />
       </head>
       <body className={`${notoSansSC.variable} min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans`}>

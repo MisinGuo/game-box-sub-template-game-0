@@ -92,3 +92,19 @@ export function getPublicOrigin(requestHeaders?: Headers): string {
   // 5. 兜底
   return siteConfig.hostname
 }
+
+/**
+ * 安全版 getPublicOrigin：确保返回值始终是合法 URL 字符串。
+ * 用于 metadataBase 等必须传入合法 URL 的场景。
+ */
+export function getSafePublicOrigin(requestHeaders?: Headers): string {
+  const origin = getPublicOrigin(requestHeaders)
+  try {
+    new URL(origin)
+    return origin
+  } catch {
+    // getPublicOrigin 返回了无法解析的值，回退到静态配置
+    console.warn(`[getSafePublicOrigin] Invalid origin "${origin}", falling back to siteConfig.hostname`)
+    return siteConfig.hostname
+  }
+}
