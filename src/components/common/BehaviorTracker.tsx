@@ -78,6 +78,12 @@ export function BehaviorTracker() {
     function onVisibilityChange() {
       if (document.visibilityState === 'hidden') {
         reportLeave()
+      } else if (document.visibilityState === 'visible') {
+        // 用户切回页面，视为新的浏览：重置计时器、上报新 PV、允许再次离开上报
+        enterTimeRef.current = Date.now()
+        hasReportedLeaveRef.current = false
+        reportedDepthsRef.current = new Set()
+        trackPV({ ...baseCtx, viewportWidth: window.innerWidth, pageUrl: window.location.href })
       }
     }
 
