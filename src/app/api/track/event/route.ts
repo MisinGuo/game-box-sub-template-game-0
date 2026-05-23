@@ -20,14 +20,8 @@ export async function POST(req: NextRequest) {
 
     const cookieStore = cookies()
     const sessionId = cookieStore.get('_sb_sid')?.value || null
-    // 从 cookie 读取来源站 referer（由 middleware 在页面请求时写入）
-    // 同一 session 内始终保留，只有新的外部来源才会覆盖
-    // 如果 cookie 不存在（新 session 直接访问），则为 null
-    const referrerUrl = cookieStore.get('_sb_ref')?.value || null
 
     const countryCode = req.headers.get('cf-ipcountry') || null
-
-    // 采集客户端发送到 Next.js 的完整请求头
     const nextjsIpHeaders = collectNextjsHeaders(req)
 
     const payload = {
@@ -38,7 +32,6 @@ export async function POST(req: NextRequest) {
       pagePath: body.pagePath || null,
       contentSlug: body.contentSlug || null,
       locale: body.locale || null,
-      referrerUrl,
       targetUrl: body.targetUrl || null,
       scrollDepth: body.scrollDepth != null ? Number(body.scrollDepth) : null,
       timeOnPage: body.timeOnPage != null ? Number(body.timeOnPage) : null,

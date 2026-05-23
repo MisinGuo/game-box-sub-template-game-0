@@ -20,12 +20,72 @@ export interface TrackContext {
 }
 
 /** 从 User-Agent 判断设备类型 */
-function parseUaCategory(ua: string | null): string {
+export function parseUaCategory(ua: string | null): string {
   if (!ua) return 'unknown'
   const lower = ua.toLowerCase()
   if (/tablet|ipad/.test(lower)) return 'tablet'
   if (/mobile|android|iphone|ipod/.test(lower)) return 'mobile'
   return 'desktop'
+}
+
+/** 从 Referer URL 解析流量来源信息 */
+export function parseReferrer(referrer: string | null): {
+  referrerType: string
+  referrerEngine: string | null
+  searchKeyword: string | null
+} {
+  if (!referrer) {
+    return { referrerType: 'direct', referrerEngine: null, searchKeyword: null }
+  }
+
+  let url: URL
+  try {
+    url = new URL(referrer)
+  } catch {
+    return { referrerType: 'referral', referrerEngine: null, searchKeyword: null }
+  }
+
+  const hostname = url.hostname.toLowerCase()
+
+  const engines: { pattern: RegExp; name: string; kwParam: string }[] = [
+    { pattern: /google\./, name: 'google', kwParam: 'q' },
+    { pattern: /baidu\.com/, name: 'baidu', kwParam: 'wd' },
+    { pattern: /bing\.com/, name: 'bing', kwParam: 'q' },
+    { pattern: /so\.com|360\.cn/, name: '360', kwParam: 'q' },
+    { pattern: /sogou\.com/, name: 'sogou', kwParam: 'query' },
+  ]
+
+  for (const engine of engines) {
+    if (engine.pattern.test(hostname)) {
+      const keyword = url.searchParams.get(engine.kwParam) || null
+      return {
+        referrerType: 'organic',
+        referrerEngine: engine.name,
+        searchKeyword: keyword ? keyword.slice(0, 200) : null,
+      }
+    }
+  }
+
+  return { referrerType: 'referral', referrerEngine: null, searchKeyword: null }
+}
+
+/** 从 pageUrl 解析 UTM 参数 */
+export function parseUtm(pageUrl: string | null | undefined): {
+  utmSource: string | null
+  utmMedium: string | null
+  utmCampaign: string | null
+} {
+  if (!pageUrl) return { utmSource: null, utmMedium: null, utmCampaign: null }
+  try {
+    const url = new URL(pageUrl)
+    return {
+      utmSource: url.searchParams.get('utm_source'),
+      utmMedium: url.searchParams.get('utm_medium'),
+      utmCampaign: url.searchParams.get('utm_campaign'),
+    }
+  } catch {
+    return { utmSource: null, utmMedium: null, utmCampaign: null }
+  }
 }
 
 /** 从 pathname 推断 pageType 和 contentSlug */

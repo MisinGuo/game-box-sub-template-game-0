@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createHash, randomUUID } from 'crypto'
 import siteConfig from '@/config/customize/site'
+import { parseReferrer, parseUaCategory, parseUtm } from '@/lib/tracker'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 const SITE_ID = siteConfig.site.siteId
@@ -13,56 +14,6 @@ function collectNextjsHeaders(req: NextRequest): string {
     headers[key] = value
   })
   return JSON.stringify(headers)
-}
-
-/** 从 Referer header 解析流量来源信息 */
-function parseReferrer(referer: string | null): {
-  referrerType: string
-  referrerEngine: string | null
-  searchKeyword: string | null
-} {
-  if (!referer) {
-    return { referrerType: 'direct', referrerEngine: null, searchKeyword: null }
-  }
-
-  let url: URL
-  try {
-    url = new URL(referer)
-  } catch {
-    return { referrerType: 'referral', referrerEngine: null, searchKeyword: null }
-  }
-
-  const hostname = url.hostname.toLowerCase()
-
-  const engines: { pattern: RegExp; name: string; kwParam: string }[] = [
-    { pattern: /google\./, name: 'google', kwParam: 'q' },
-    { pattern: /baidu\.com/, name: 'baidu', kwParam: 'wd' },
-    { pattern: /bing\.com/, name: 'bing', kwParam: 'q' },
-    { pattern: /so\.com|360\.cn/, name: '360', kwParam: 'q' },
-    { pattern: /sogou\.com/, name: 'sogou', kwParam: 'query' },
-  ]
-
-  for (const engine of engines) {
-    if (engine.pattern.test(hostname)) {
-      const keyword = url.searchParams.get(engine.kwParam) || null
-      return {
-        referrerType: 'organic',
-        referrerEngine: engine.name,
-        searchKeyword: keyword ? keyword.slice(0, 200) : null,
-      }
-    }
-  }
-
-  return { referrerType: 'referral', referrerEngine: null, searchKeyword: null }
-}
-
-/** 从 User-Agent 判断设备类型 */
-function parseUaCategory(ua: string | null): string {
-  if (!ua) return 'unknown'
-  const lower = ua.toLowerCase()
-  if (/tablet|ipad/.test(lower)) return 'tablet'
-  if (/mobile|android|iphone|ipod/.test(lower)) return 'mobile'
-  return 'desktop'
 }
 
 /** 获取或创建匿名 session_id（SHA-256 散列后存 Cookie） */
@@ -92,19 +43,7 @@ export async function POST(req: NextRequest) {
     const { referrerType, referrerEngine, searchKeyword } = parseReferrer(referrerUrl)
     const uaCategory = parseUaCategory(ua)
 
-    let utmSource: string | null = null
-    let utmMedium: string | null = null
-    let utmCampaign: string | null = null
-    if (body.pageUrl) {
-      try {
-        const pageUrl = new URL(body.pageUrl)
-        utmSource = pageUrl.searchParams.get('utm_source')
-        utmMedium = pageUrl.searchParams.get('utm_medium')
-        utmCampaign = pageUrl.searchParams.get('utm_campaign')
-      } catch {
-        // 忽略无效 URL
-      }
-    }
+    const { utmSource, utmMedium, utmCampaign } = parseUtm(body.pageUrl)
 
     // 采集客户端发送到 Next.js 的完整请求头
     const nextjsIpHeaders = collectNextjsHeaders(req)
