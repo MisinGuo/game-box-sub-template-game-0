@@ -22,6 +22,7 @@ export function BehaviorTracker() {
 
   const enterTimeRef = useRef<number>(Date.now())
   const reportedDepthsRef = useRef<Set<number>>(new Set())
+  const hasReportedLeaveRef = useRef(false)
 
   // ── PV 上报 ──────────────────────────────────────────────────
   useEffect(() => {
@@ -38,6 +39,7 @@ export function BehaviorTracker() {
 
     enterTimeRef.current = Date.now()
     reportedDepthsRef.current = new Set()
+    hasReportedLeaveRef.current = false
   }, [pathname, searchParams])
 
   // ── 滚动深度 + 页面离开 ───────────────────────────────────────
@@ -65,8 +67,10 @@ export function BehaviorTracker() {
     }
 
     function reportLeave() {
+      if (hasReportedLeaveRef.current) return
       const seconds = (Date.now() - enterTimeRef.current) / 1000
       if (seconds >= 1) {
+        hasReportedLeaveRef.current = true
         trackPageLeave(seconds, baseCtx)
       }
     }
