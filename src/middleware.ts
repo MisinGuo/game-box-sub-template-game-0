@@ -21,6 +21,7 @@ const supportedLocales = ['zh-CN', 'zh-TW', 'en-US']
 // 首次 SSR 时 middleware 设置 cookie，后续客户端导航自动携带 cookie。
 const PUBLIC_HOST_HEADER = 'x-public-host'
 const PUBLIC_HOST_COOKIE = 'x-public-host'
+const REFERRER_COOKIE = '_sb_ref'
 
 /**
  * 安全设置 cookie，防止重复追加
@@ -36,6 +37,34 @@ function setPublicHostCookie(response: NextResponse, value: string) {
     sameSite: 'lax',
     secure: true,
     httpOnly: false, // 允许客户端 JS 读取（用于调试）
+  })
+}
+
+/**
+ * 在页面请求时，将外部来源的 HTTP Referer 头写入 cookie。
+ * 后续 /api/track/pv 从 cookie 读取真正的来源站，读取后立即清除。
+ * 不设 maxAge（session cookie），生命周期与浏览器标签页一致。
+ * 每次有新的外部来源都会覆盖旧值，确保记录最新的来源站。
+ */
+function setReferrerCookie(response: NextResponse, request: NextRequest) {
+  const referer = request.headers.get('referer')
+  if (!referer) return // 直接访问无 referer
+
+  // 排除站内来源：如果 referer 的域名和当前站相同，则不记录
+  try {
+    const refererHost = new URL(referer).hostname
+    const currentHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
+    if (refererHost === currentHost.replace(/:\d+$/, '')) return
+  } catch {
+    // URL 解析失败，仍然记录
+  }
+
+  response.cookies.set(REFERRER_COOKIE, referer, {
+    path: '/',
+    sameSite: 'lax',
+    secure: true,
+    httpOnly: true,
+    // 不设 maxAge，session cookie，浏览器关闭即清除
   })
 }
 
@@ -132,6 +161,7 @@ export function middleware(request: NextRequest) {
     if (publicHost) {
       setPublicHostCookie(response, publicHost)
     }
+    setReferrerCookie(response, request)
     return response
   }
   
@@ -162,6 +192,7 @@ export function middleware(request: NextRequest) {
     if (publicHost) {
       setPublicHostCookie(response, publicHost)
     }
+    setReferrerCookie(response, request)
     return response
   }
 
@@ -173,6 +204,7 @@ export function middleware(request: NextRequest) {
   if (publicHost) {
     setPublicHostCookie(response, publicHost)
   }
+  setReferrerCookie(response, request)
   return response
 }
 

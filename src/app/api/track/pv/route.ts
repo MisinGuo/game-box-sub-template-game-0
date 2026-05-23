@@ -81,11 +81,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { sessionId, isNew } = await getSessionId(req)
 
-    const referer = req.headers.get('referer')
+    // 从 cookie 读取来源站 referer（由 middleware 在页面请求时写入）
+    // 同一 session 内始终保留，只有新的外部来源才会覆盖
+    // 如果 cookie 不存在（新 session 直接访问），则为 null
+    const cookieStore = cookies()
+    const referrerUrl = cookieStore.get('_sb_ref')?.value || null
     const ua = req.headers.get('user-agent')
     const countryCode = req.headers.get('cf-ipcountry') || null
 
-    const { referrerType, referrerEngine, searchKeyword } = parseReferrer(referer)
+    const { referrerType, referrerEngine, searchKeyword } = parseReferrer(referrerUrl)
     const uaCategory = parseUaCategory(ua)
 
     let utmSource: string | null = null
@@ -112,6 +116,7 @@ export async function POST(req: NextRequest) {
       pagePath: body.pagePath || null,
       contentSlug: body.contentSlug || null,
       locale: body.locale || null,
+      referrerUrl: referrerUrl,
       referrerType,
       referrerEngine,
       searchKeyword,
