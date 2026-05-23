@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { createHash, randomUUID } from 'crypto'
 import siteConfig from '@/config/customize/site'
 import { parseReferrer, parseUaCategory, parseUtm } from '@/lib/tracker'
 import { REFERRER_COOKIE_KEY, SESSION_COOKIE_KEY } from '@/lib/constants'
+import { readSessionOrGenerate } from '@/lib/session'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 const SITE_ID = siteConfig.site.siteId
@@ -17,21 +17,10 @@ function collectNextjsHeaders(req: NextRequest): string {
   return JSON.stringify(headers)
 }
 
-/** 获取或创建匿名 session_id（SHA-256 散列后存 Cookie） */
-async function getSessionId(req: NextRequest): Promise<{ sessionId: string; isNew: boolean }> {
-  const cookieStore = cookies()
-  const existing = cookieStore.get(SESSION_COOKIE_KEY)?.value
-  if (existing) return { sessionId: existing, isNew: false }
-
-  const raw = randomUUID()
-  const hashed = createHash('sha256').update(raw).digest('hex')
-  return { sessionId: hashed, isNew: true }
-}
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { sessionId, isNew } = await getSessionId(req)
+    const { sessionId, isNew } = readSessionOrGenerate(req)
 
     // 从 cookie 读取来源站 referer（由 middleware 在页面请求时写入）
     // 同一 session 内始终保留，只有新的外部来源才会覆盖
