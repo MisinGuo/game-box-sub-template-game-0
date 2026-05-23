@@ -12,9 +12,10 @@ import {
 /**
  * 自动行为埋点组件
  *
- * - 路由变化时上报 PV
+ * - 路由变化时：先上报旧页面离开，再上报新页面 PV
  * - 监听滚动深度里程碑（25 / 50 / 75 / 100%）
- * - 页面离开时上报停留时长（visibilitychange + pagehide）
+ * - 切走 tab 时上报停留时长，切回 tab 时视为新浏览（重置计时 + 新 PV）
+ * - 关闭页面时上报停留时长（pagehide）
  */
 export function BehaviorTracker() {
   const pathname = usePathname()
@@ -24,10 +25,36 @@ export function BehaviorTracker() {
   const reportedDepthsRef = useRef<Set<number>>(new Set())
   const hasReportedLeaveRef = useRef(false)
 
+  // 保存当前页面的上下文，供 cleanup 时上报旧页面离开使用
+  const currentCtxRef = useRef<{
+    pageType: string
+    contentSlug: string | null
+    locale: string
+    pagePath: string
+  } | null>(null)
+
+  // ── 路由变化：先报旧页面离开，再报新页面 PV ──────────────────
+  useEffect(() => {
+    const locale = pathname.match(/^\/(zh-TW|zh-CN|en-US)(\/|$)/)?.[1] ?? 'zh-CN'
+    const ctx = resolvePageMeta(pathname)
+    const baseCtx = { pageType: ctx.pageType, contentSlug: ctx.contentSlug ?? null, locale, pagePath: pathname }
+
+    // cleanup：路由即将切换，上报旧页面的离开事件
+    return () => {
+      if (!hasReportedLeaveRef.current) {
+        const seconds = (Date.now() - enterTimeRef.current) / 1000
+        if (seconds >= 1) {
+          trackPageLeave(seconds, currentCtxRef.current || baseCtx)
+        }
+      }
+    }
+  }, [pathname, searchParams])
+
   // ── PV 上报 ──────────────────────────────────────────────────
   useEffect(() => {
     const locale = pathname.match(/^\/(zh-TW|zh-CN|en-US)(\/|$)/)?.[1] ?? 'zh-CN'
     const ctx = resolvePageMeta(pathname)
+    const baseCtx = { pageType: ctx.pageType, contentSlug: ctx.contentSlug ?? null, locale, pagePath: pathname }
 
     trackPV({
       ...ctx,
@@ -37,16 +64,18 @@ export function BehaviorTracker() {
       pageUrl: window.location.href,
     })
 
+    // 重置状态
     enterTimeRef.current = Date.now()
     reportedDepthsRef.current = new Set()
     hasReportedLeaveRef.current = false
+    currentCtxRef.current = baseCtx
   }, [pathname, searchParams])
 
-  // ── 滚动深度 + 页面离开 ───────────────────────────────────────
+  // ── 滚动深度 + tab 切换离开 ───────────────────────────────────────
   useEffect(() => {
     const locale = pathname.match(/^\/(zh-TW|zh-CN|en-US)(\/|$)/)?.[1] ?? 'zh-CN'
     const ctx = resolvePageMeta(pathname)
-    const baseCtx = { pageType: ctx.pageType, contentSlug: ctx.contentSlug, locale, pagePath: pathname }
+    const baseCtx = { pageType: ctx.pageType, contentSlug: ctx.contentSlug ?? null, locale, pagePath: pathname }
 
     const milestones: Array<25 | 50 | 75 | 100> = [25, 50, 75, 100]
 
@@ -71,7 +100,7 @@ export function BehaviorTracker() {
       const seconds = (Date.now() - enterTimeRef.current) / 1000
       if (seconds >= 1) {
         hasReportedLeaveRef.current = true
-        trackPageLeave(seconds, baseCtx)
+        trackPageLeave(seconds, currentCtxRef.current || baseCtx)
       }
     }
 

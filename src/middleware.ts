@@ -48,15 +48,13 @@ function setPublicHostCookie(response: NextResponse, value: string) {
  */
 function setReferrerCookie(response: NextResponse, request: NextRequest) {
   const referer = request.headers.get('referer')
-  if (!referer) return // 直接访问无 referer
+  if (!referer) return
 
-  // 排除站内来源：如果 referer 的域名和当前站相同，则不记录
+  // 记录完整的来源链路（包括站内跳转），便于追踪用户浏览路径
   try {
-    const refererHost = new URL(referer).hostname
-    const currentHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
-    if (refererHost === currentHost.replace(/:\d+$/, '')) return
+    new URL(referer) // 校验是否为合法 URL
   } catch {
-    // URL 解析失败，仍然记录
+    return
   }
 
   response.cookies.set(REFERRER_COOKIE, referer, {
@@ -64,7 +62,6 @@ function setReferrerCookie(response: NextResponse, request: NextRequest) {
     sameSite: 'lax',
     secure: true,
     httpOnly: true,
-    // 不设 maxAge，session cookie，浏览器关闭即清除
   })
 }
 

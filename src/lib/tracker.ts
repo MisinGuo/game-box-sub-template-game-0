@@ -29,7 +29,7 @@ export function parseUaCategory(ua: string | null): string {
 }
 
 /** 从 Referer URL 解析流量来源信息 */
-export function parseReferrer(referrer: string | null): {
+export function parseReferrer(referrer: string | null, siteHost?: string | null): {
   referrerType: string
   referrerEngine: string | null
   searchKeyword: string | null
@@ -63,6 +63,14 @@ export function parseReferrer(referrer: string | null): {
         referrerEngine: engine.name,
         searchKeyword: keyword ? keyword.slice(0, 200) : null,
       }
+    }
+  }
+
+  /** 判断是否为站内跳转（同域名或子域名） */
+  if (siteHost) {
+    const host = siteHost.replace(/:\d+$/, '').toLowerCase()
+    if (hostname === host || hostname.endsWith('.' + host)) {
+      return { referrerType: 'internal', referrerEngine: null, searchKeyword: null }
     }
   }
 

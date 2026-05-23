@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const ua = req.headers.get('user-agent')
     const countryCode = req.headers.get('cf-ipcountry') || null
 
-    const { referrerType, referrerEngine, searchKeyword } = parseReferrer(referrerUrl)
+    const { referrerType, referrerEngine, searchKeyword } = parseReferrer(referrerUrl, req.headers.get('x-forwarded-host') || req.headers.get('host'))
     const uaCategory = parseUaCategory(ua)
 
     const { utmSource, utmMedium, utmCampaign } = parseUtm(body.pageUrl)
