@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createHash, randomUUID } from 'crypto'
 import siteConfig from '@/config/customize/site'
 import { parseReferrer, parseUaCategory, parseUtm } from '@/lib/tracker'
+import { REFERRER_COOKIE_KEY, SESSION_COOKIE_KEY } from '@/lib/constants'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 const SITE_ID = siteConfig.site.siteId
@@ -19,7 +20,7 @@ function collectNextjsHeaders(req: NextRequest): string {
 /** 获取或创建匿名 session_id（SHA-256 散列后存 Cookie） */
 async function getSessionId(req: NextRequest): Promise<{ sessionId: string; isNew: boolean }> {
   const cookieStore = cookies()
-  const existing = cookieStore.get('_sb_sid')?.value
+  const existing = cookieStore.get(SESSION_COOKIE_KEY)?.value
   if (existing) return { sessionId: existing, isNew: false }
 
   const raw = randomUUID()
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     // 同一 session 内始终保留，只有新的外部来源才会覆盖
     // 如果 cookie 不存在（新 session 直接访问），则为 null
     const cookieStore = cookies()
-    const referrerUrl = cookieStore.get('_sb_ref')?.value || null
+    const referrerUrl = cookieStore.get(REFERRER_COOKIE_KEY)?.value || null
     const ua = req.headers.get('user-agent')
     const countryCode = req.headers.get('cf-ipcountry') || null
 
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
     const response = new NextResponse(null, { status: 204 })
 
     if (isNew) {
-      response.cookies.set('_sb_sid', sessionId, {
+      response.cookies.set(SESSION_COOKIE_KEY, sessionId, {
         httpOnly: true,
         sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 365,

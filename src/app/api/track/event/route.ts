@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import siteConfig from '@/config/customize/site'
+import { SESSION_COOKIE_KEY } from '@/lib/constants'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 const SITE_ID = siteConfig.site.siteId
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
 
     const cookieStore = cookies()
-    const sessionId = cookieStore.get('_sb_sid')?.value || null
+    const sessionId = cookieStore.get(SESSION_COOKIE_KEY)?.value || null
 
     const countryCode = req.headers.get('cf-ipcountry') || null
     const nextjsIpHeaders = collectNextjsHeaders(req)

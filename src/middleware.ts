@@ -19,20 +19,17 @@ const supportedLocales = ['zh-CN', 'zh-TW', 'en-US']
 //
 // Cookie 方案同时解决了客户端导航（RSC 请求）丢失 x-forwarded-host 的问题：
 // 首次 SSR 时 middleware 设置 cookie，后续客户端导航自动携带 cookie。
-const PUBLIC_HOST_HEADER = 'x-public-host'
-const PUBLIC_HOST_COOKIE = 'x-public-host'
-const REFERRER_COOKIE = '_sb_ref'
+import { PUBLIC_HOST_KEY, REFERRER_COOKIE_KEY } from '@/lib/constants'
 
 /**
- * 安全设置 cookie，防止重复追加
- * OpenNext/CF Workers 环境下 response.cookies.set() 可能追加而非覆盖，
- * 导致 cookie 值变成 "host1, host1" 这样的重复值。
- * 先删除旧 cookie 再设置新值来确保正确性。
+ * 仅在 cookie 值与期望值不同时才写入，避免追加问题。
+ * OpenNext/CF Workers 下 response.cookies.set() 可能追加而非覆盖，
+ * 所以通过比对请求中已有的 cookie 值，仅在缺失或不同时才设置。
  */
-function setPublicHostCookie(response: NextResponse, value: string) {
-  // 先删除可能存在的旧 cookie，防止追加
-  response.cookies.delete(PUBLIC_HOST_COOKIE)
-  response.cookies.set(PUBLIC_HOST_COOKIE, value, {
+function setPublicHostCookie(response: NextResponse, request: NextRequest, value: string) {
+  const existing = request.cookies.get(PUBLIC_HOST_KEY)?.value
+  if (existing === value) return
+  response.cookies.set(PUBLIC_HOST_KEY, value, {
     path: '/',
     sameSite: 'lax',
     secure: true,
@@ -41,23 +38,22 @@ function setPublicHostCookie(response: NextResponse, value: string) {
 }
 
 /**
- * 在页面请求时，将外部来源的 HTTP Referer 头写入 cookie。
- * 后续 /api/track/pv 从 cookie 读取真正的来源站，读取后立即清除。
- * 不设 maxAge（session cookie），生命周期与浏览器标签页一致。
- * 每次有新的外部来源都会覆盖旧值，确保记录最新的来源站。
+ * 仅在 cookie 值与当前 referer 不同时才写入，避免追加问题。
  */
 function setReferrerCookie(response: NextResponse, request: NextRequest) {
   const referer = request.headers.get('referer')
   if (!referer) return
 
-  // 记录完整的来源链路（包括站内跳转），便于追踪用户浏览路径
   try {
     new URL(referer) // 校验是否为合法 URL
   } catch {
     return
   }
 
-  response.cookies.set(REFERRER_COOKIE, referer, {
+  const existing = request.cookies.get(REFERRER_COOKIE_KEY)?.value
+  if (existing === referer) return
+
+  response.cookies.set(REFERRER_COOKIE_KEY, referer, {
     path: '/',
     sameSite: 'lax',
     secure: true,
@@ -84,7 +80,7 @@ export function middleware(request: NextRequest) {
   function withPublicHostHeaders(): Headers {
     const headers = new Headers(request.headers)
     if (publicHost) {
-      headers.set(PUBLIC_HOST_HEADER, publicHost)
+      headers.set(PUBLIC_HOST_KEY, publicHost)
     }
     return headers
   }
@@ -136,7 +132,7 @@ export function middleware(request: NextRequest) {
     // ⚠️ NextResponse.rewrite() 不支持 { request: { headers } }，改用 cookie 传递
     const response = NextResponse.rewrite(newUrl)
     if (publicHost) {
-      setPublicHostCookie(response, publicHost)
+      setPublicHostCookie(response, request, publicHost)
     }
     return response
   }
@@ -156,7 +152,7 @@ export function middleware(request: NextRequest) {
     const response = NextResponse.next({ request: { headers: withPublicHostHeaders() } })
     // 同时设置 cookie，确保 rewrite 路径和客户端导航也能获取
     if (publicHost) {
-      setPublicHostCookie(response, publicHost)
+      setPublicHostCookie(response, request, publicHost)
     }
     setReferrerCookie(response, request)
     return response
@@ -187,7 +183,7 @@ export function middleware(request: NextRequest) {
     requestHeaders.set('x-locale', currentLocale)
     const response = NextResponse.next({ request: { headers: requestHeaders } })
     if (publicHost) {
-      setPublicHostCookie(response, publicHost)
+      setPublicHostCookie(response, request, publicHost)
     }
     setReferrerCookie(response, request)
     return response
@@ -199,7 +195,7 @@ export function middleware(request: NextRequest) {
   url.pathname = `/${defaultLocale}${pathname}`
   const response = NextResponse.rewrite(url)
   if (publicHost) {
-    setPublicHostCookie(response, publicHost)
+    setPublicHostCookie(response, request, publicHost)
   }
   setReferrerCookie(response, request)
   return response
