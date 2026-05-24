@@ -301,6 +301,7 @@ async function BoxDetailContent({ locale, id, pageNum }: { locale: Locale; id: n
                 iosText={t.iosDownload}
                 sourceText={t.sourceDownload}
                 noDownloadText={t.noDownload}
+                locale={locale}
               />
             </div>
           </div>

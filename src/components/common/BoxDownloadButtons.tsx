@@ -2,17 +2,29 @@
 
 import { Download } from 'lucide-react'
 import { getOutboundUrl } from '@/lib/outbound-url'
+import { usePathname } from 'next/navigation'
+import { trackOutboundClick, resolvePageMeta } from '@/lib/tracker'
 
 interface BoxDownloadButtonsProps {
   androidUrl?: string
   iosUrl?: string
   viewDetailText: string
+  locale?: string
 }
 
-export function BoxDownloadButtons({ androidUrl, iosUrl, viewDetailText }: BoxDownloadButtonsProps) {
+export function BoxDownloadButtons({ androidUrl, iosUrl, viewDetailText, locale }: BoxDownloadButtonsProps) {
+  const pathname = usePathname()
+  const pageMeta = resolvePageMeta(pathname)
+
   const handleClick = (url: string) => (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    trackOutboundClick(url, {
+      pageType: pageMeta.pageType,
+      contentSlug: pageMeta.contentSlug,
+      locale,
+      pagePath: pathname,
+    })
     window.open(getOutboundUrl(url), '_blank', 'noopener,noreferrer')
   }
 

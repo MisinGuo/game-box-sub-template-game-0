@@ -3,10 +3,11 @@
 import { Star, Download } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { locales, defaultLocale } from '@/config/site/locales'
 import type { Locale } from '@/config/site/locales'
 import { getOutboundUrl } from '@/lib/outbound-url'
+import { trackOutboundClick, resolvePageMeta } from '@/lib/tracker'
 
 interface BoxCardProps {
   id: number;
@@ -35,6 +36,17 @@ export function BoxCard({ id, name, logoColor, logoText, logoUrl, description, t
   const gameCountText = `${gameCount}${t.gameCount}`
   const detailUrl = locale === defaultLocale ? `/boxes/${id}` : `/${locale}/boxes/${id}`
   const router = useRouter()
+  const pathname = usePathname()
+  const pageMeta = resolvePageMeta(pathname)
+
+  function handleOutboundClick(url: string) {
+    trackOutboundClick(url, {
+      pageType: pageMeta.pageType,
+      contentSlug: pageMeta.contentSlug,
+      locale,
+      pagePath: pathname,
+    })
+  }
 
   return (
     <div className="group" onClick={() => router.push(detailUrl)}>
@@ -90,7 +102,7 @@ export function BoxCard({ id, name, logoColor, logoText, logoUrl, description, t
                 <button
                   type="button"
                   className="inline-flex items-center justify-center h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700 font-semibold rounded-md text-white transition-colors"
-                  onClick={(e) => { e.stopPropagation(); window.open(getOutboundUrl(androidUrl), '_blank', 'noopener,noreferrer'); }}
+                  onClick={(e) => { e.stopPropagation(); handleOutboundClick(androidUrl); window.open(getOutboundUrl(androidUrl), '_blank', 'noopener,noreferrer'); }}
                 >
                   <Download className="h-3.5 w-3.5 mr-1" />Android
                 </button>
@@ -99,7 +111,7 @@ export function BoxCard({ id, name, logoColor, logoText, logoUrl, description, t
                 <button
                   type="button"
                   className="inline-flex items-center justify-center h-8 px-3 text-xs bg-green-600 hover:bg-green-700 font-semibold rounded-md text-white transition-colors"
-                  onClick={(e) => { e.stopPropagation(); window.open(getOutboundUrl(iosUrl), '_blank', 'noopener,noreferrer'); }}
+                  onClick={(e) => { e.stopPropagation(); handleOutboundClick(iosUrl); window.open(getOutboundUrl(iosUrl), '_blank', 'noopener,noreferrer'); }}
                 >
                   <Download className="h-3.5 w-3.5 mr-1" />iOS
                 </button>

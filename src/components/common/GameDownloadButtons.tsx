@@ -3,6 +3,8 @@
 import { Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getOutboundUrl } from '@/lib/outbound-url'
+import { usePathname } from 'next/navigation'
+import { trackOutboundClick, resolvePageMeta } from '@/lib/tracker'
 
 interface GameDownloadButtonsProps {
   downloadUrl?: string | null
@@ -12,14 +14,25 @@ interface GameDownloadButtonsProps {
   androidText: string
   iosText: string
   noDownloadText: string
+  locale?: string
 }
 
 export function GameDownloadButtons({
   downloadUrl, androidUrl, iosUrl,
   downloadNowText, androidText, iosText, noDownloadText,
+  locale,
 }: GameDownloadButtonsProps) {
+  const pathname = usePathname()
+  const pageMeta = resolvePageMeta(pathname)
+
   const handleClick = (url: string) => (e: React.MouseEvent) => {
     e.preventDefault()
+    trackOutboundClick(url, {
+      pageType: pageMeta.pageType,
+      contentSlug: pageMeta.contentSlug,
+      locale,
+      pagePath: pathname,
+    })
     window.open(getOutboundUrl(url), '_blank', 'noopener,noreferrer')
   }
 

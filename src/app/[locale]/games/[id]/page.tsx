@@ -486,6 +486,7 @@ async function GameDetailContent({ id, locale }: { id: string; locale: string })
                 androidText={t.androidDownload}
                 iosText={t.iosDownload}
                 noDownloadText={t.noDownload}
+                locale={locale}
               />
 
               {/* 信息条 */}
