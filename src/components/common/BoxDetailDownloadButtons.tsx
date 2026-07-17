@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import { trackOutboundClick, resolvePageMeta } from '@/lib/tracker'
 
 interface BoxDetailDownloadButtonsProps {
+  boxId?: number
   androidUrl?: string
   iosUrl?: string
   downloadUrl?: string
@@ -18,7 +19,7 @@ interface BoxDetailDownloadButtonsProps {
 }
 
 export function BoxDetailDownloadButtons({
-  androidUrl, iosUrl, downloadUrl,
+  boxId, androidUrl, iosUrl, downloadUrl,
   androidText, iosText, sourceText, noDownloadText,
   locale,
 }: BoxDetailDownloadButtonsProps) {
@@ -33,6 +34,10 @@ export function BoxDetailDownloadButtons({
       locale,
       pagePath: pathname,
     })
+    // 记录盒子下载（异步，不阻塞跳转）
+    if (boxId) {
+      trackBoxDownload(boxId)
+    }
     window.open(getOutboundUrl(url), '_blank', 'noopener,noreferrer')
   }
 
@@ -62,4 +67,17 @@ export function BoxDetailDownloadButtons({
       )}
     </div>
   )
+}
+
+/** 上报盒子下载到后端（fire-and-forget） */
+function trackBoxDownload(boxId: number): void {
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
+    fetch(`${apiUrl}/api/public/boxes/${boxId}/download`, {
+      method: 'POST',
+      keepalive: true,
+    }).catch(() => {})
+  } catch {
+    // 静默失败
+  }
 }

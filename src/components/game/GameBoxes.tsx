@@ -154,13 +154,25 @@ export default function GameBoxes({ boxes, locale, defaultLocale }: GameBoxesPro
   const pathname = usePathname()
   const pageMeta = resolvePageMeta(pathname)
 
-  function handleOutboundClick(targetUrl: string) {
+  function handleOutboundClick(targetUrl: string, boxId?: number) {
     trackOutboundClick(targetUrl, {
       pageType: pageMeta.pageType,
       contentSlug: pageMeta.contentSlug,
       locale,
       pagePath: pathname,
     })
+    // 记录盒子下载（异步，不阻塞跳转）
+    if (boxId) {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
+        fetch(`${apiUrl}/api/public/boxes/${boxId}/download`, {
+          method: 'POST',
+          keepalive: true,
+        }).catch(() => {})
+      } catch {
+        // 静默失败
+      }
+    }
   }
 
   const localePath = (path: string) =>
@@ -325,7 +337,7 @@ export default function GameBoxes({ boxes, locale, defaultLocale }: GameBoxesPro
                       <Button
                         size="sm"
                         className="bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-xs h-7"
-                        onClick={() => { handleOutboundClick(mainDownloadUrl); window.open(getOutboundUrl(mainDownloadUrl), '_blank', 'noopener,noreferrer'); }}
+                        onClick={() => { handleOutboundClick(mainDownloadUrl, box.boxId); window.open(getOutboundUrl(mainDownloadUrl), '_blank', 'noopener,noreferrer'); }}
                       >
                         <Download className="h-3 w-3 mr-1" /> 下载游戏
                       </Button>

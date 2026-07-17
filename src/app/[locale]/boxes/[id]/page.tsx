@@ -294,6 +294,7 @@ async function BoxDetailContent({ locale, id, pageNum }: { locale: Locale; id: n
               </div>
 
               <BoxDetailDownloadButtons
+                boxId={box.id}
                 androidUrl={box.androidUrl}
                 iosUrl={box.iosUrl}
                 downloadUrl={box.downloadUrl}
