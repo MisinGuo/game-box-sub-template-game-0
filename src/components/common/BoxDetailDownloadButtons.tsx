@@ -69,14 +69,15 @@ export function BoxDetailDownloadButtons({
   )
 }
 
-/** 上报盒子下载到后端（fire-and-forget） */
+/** 上报盒子下载到后端（fire-and-forget，经 Next.js API 层中转） */
 function trackBoxDownload(boxId: number): void {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
-    fetch(`${apiUrl}/api/public/boxes/${boxId}/download`, {
-      method: 'POST',
-      keepalive: true,
-    }).catch(() => {})
+    const blob = new Blob([JSON.stringify({ boxId })], { type: 'application/json' })
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      navigator.sendBeacon('/api/track/box-download', blob)
+    } else {
+      fetch('/api/track/box-download', { method: 'POST', body: blob, keepalive: true }).catch(() => {})
+    }
   } catch {
     // 静默失败
   }

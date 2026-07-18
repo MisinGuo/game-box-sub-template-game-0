@@ -46,6 +46,17 @@ export function BoxCard({ id, name, logoColor, logoText, logoUrl, description, t
       locale,
       pagePath: pathname,
     })
+    // 记录盒子下载（异步，经 Next.js API 层中转）
+    try {
+      const blob = new Blob([JSON.stringify({ boxId: id })], { type: 'application/json' })
+      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        navigator.sendBeacon('/api/track/box-download', blob)
+      } else {
+        fetch('/api/track/box-download', { method: 'POST', body: blob, keepalive: true }).catch(() => {})
+      }
+    } catch {
+      // 静默失败
+    }
   }
 
   return (

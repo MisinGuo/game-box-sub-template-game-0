@@ -161,14 +161,15 @@ export default function GameBoxes({ boxes, locale, defaultLocale }: GameBoxesPro
       locale,
       pagePath: pathname,
     })
-    // 记录盒子下载（异步，不阻塞跳转）
+    // 记录盒子下载（异步，经 Next.js API 层中转）
     if (boxId) {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
-        fetch(`${apiUrl}/api/public/boxes/${boxId}/download`, {
-          method: 'POST',
-          keepalive: true,
-        }).catch(() => {})
+        const blob = new Blob([JSON.stringify({ boxId })], { type: 'application/json' })
+        if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+          navigator.sendBeacon('/api/track/box-download', blob)
+        } else {
+          fetch('/api/track/box-download', { method: 'POST', body: blob, keepalive: true }).catch(() => {})
+        }
       } catch {
         // 静默失败
       }
