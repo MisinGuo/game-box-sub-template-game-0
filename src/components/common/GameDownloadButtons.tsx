@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import { trackOutboundClick, resolvePageMeta } from '@/lib/tracker'
 
 interface GameDownloadButtonsProps {
+  gameId?: number
   downloadUrl?: string | null
   androidUrl?: string | null
   iosUrl?: string | null
@@ -18,7 +19,7 @@ interface GameDownloadButtonsProps {
 }
 
 export function GameDownloadButtons({
-  downloadUrl, androidUrl, iosUrl,
+  gameId, downloadUrl, androidUrl, iosUrl,
   downloadNowText, androidText, iosText, noDownloadText,
   locale,
 }: GameDownloadButtonsProps) {
@@ -33,6 +34,9 @@ export function GameDownloadButtons({
       locale,
       pagePath: pathname,
     })
+    if (gameId) {
+      trackGameDownload(gameId)
+    }
     window.open(getOutboundUrl(url), '_blank', 'noopener,noreferrer')
   }
 
@@ -63,4 +67,18 @@ export function GameDownloadButtons({
       )}
     </div>
   )
+}
+
+/** 上报游戏下载到后端（fire-and-forget，经 Next.js API 层中转） */
+function trackGameDownload(gameId: number): void {
+  try {
+    const blob = new Blob([JSON.stringify({ gameId })], { type: 'application/json' })
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      navigator.sendBeacon('/api/track/game-download', blob)
+    } else {
+      fetch('/api/track/game-download', { method: 'POST', body: blob, keepalive: true }).catch(() => {})
+    }
+  } catch {
+    // 静默失败
+  }
 }

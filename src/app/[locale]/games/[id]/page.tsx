@@ -479,6 +479,7 @@ async function GameDetailContent({ id, locale }: { id: string; locale: string })
               </div>
 
               <GameDownloadButtons
+                gameId={game.id}
                 downloadUrl={game.downloadUrl}
                 androidUrl={game.androidUrl}
                 iosUrl={game.iosUrl}
