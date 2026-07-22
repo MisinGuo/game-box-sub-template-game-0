@@ -83,6 +83,7 @@ interface GameBoxesProps {
   boxes: BoxRelation[]
   locale: string
   defaultLocale: string
+  gameId?: number
 }
 
 /** 安全解析 JSON */
@@ -148,7 +149,7 @@ function extractLinks(promoLinks: PromotionLinks | null): { label: string; url: 
   })
 }
 
-export default function GameBoxes({ boxes, locale, defaultLocale }: GameBoxesProps) {
+export default function GameBoxes({ boxes, locale, defaultLocale, gameId }: GameBoxesProps) {
   if (!boxes || boxes.length === 0) return null
 
   const pathname = usePathname()
@@ -169,6 +170,19 @@ export default function GameBoxes({ boxes, locale, defaultLocale }: GameBoxesPro
           navigator.sendBeacon('/api/track/box-download', blob)
         } else {
           fetch('/api/track/box-download', { method: 'POST', body: blob, keepalive: true }).catch(() => {})
+        }
+      } catch {
+        // 静默失败
+      }
+    }
+    // 记录游戏下载（异步，经 Next.js API 层中转）
+    if (gameId) {
+      try {
+        const blob = new Blob([JSON.stringify({ gameId })], { type: 'application/json' })
+        if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+          navigator.sendBeacon('/api/track/game-download', blob)
+        } else {
+          fetch('/api/track/game-download', { method: 'POST', body: blob, keepalive: true }).catch(() => {})
         }
       } catch {
         // 静默失败

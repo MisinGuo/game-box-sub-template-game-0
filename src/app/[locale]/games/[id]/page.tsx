@@ -225,6 +225,7 @@ async function GameBoxesSection({
         boxes={boxes}
         locale={locale}
         defaultLocale={defaultLocale}
+        gameId={gameId}
       />
     )
   } catch (error) {
